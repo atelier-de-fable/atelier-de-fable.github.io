@@ -147,6 +147,7 @@
     background:var(--fusain);
     border-top:1px solid var(--trait);
     font-family:var(--mono); font-size:.8rem;
+    position:relative; z-index:2; /* reste au-dessus d'un canvas zoomé (transform) */
   }
   .pupitre label{
     display:flex; align-items:center; gap:.5rem;
@@ -324,7 +325,9 @@
           <div class="pupitre">
             <button class="bouton" id="langton-pause">Pause</button>
             <button class="bouton" id="langton-reset">Recommencer</button>
-            <button class="bouton" id="langton-duo">phénomène nº 1</button>
+            <button class="bouton" id="langton-ph1" title="l'observation de Vincent : la paire qui efface tout">phén. 1</button>
+            <button class="bouton" id="langton-ph2" title="les jumelles : symétrie parfaite, autoroutes opposées">phén. 2</button>
+            <button class="bouton" id="langton-ph3" title="la valse immobile : deux fourmis qui s'emprisonnent">phén. 3</button>
             <label>vitesse
               <input type="range" id="langton-vitesse" min="0" max="100" value="42" aria-label="Vitesse de la simulation">
             </label>
@@ -350,17 +353,23 @@ inverse la case, avance d'un pas.</pre>
         <p class="invite">Attendez l'autoroute — ou cliquez dans la vitrine pour lâcher
         d'autres fourmis et ruiner leur belle œuvre.</p>
         <div class="plaque registre">
-          <span class="plaque-titre">Registre des phénomènes · nº 1</span>
-          <p>Le 29 août 2026, jour de l'ouverture, <b>Vincent</b> — premier visiteur du
-          musée — rapporte avoir vu une autoroute faire demi-tour et s'effacer.</p>
-          <p>Enquête du conservateur : la règle de Langton ne distingue pas construire
-          de détruire — elle est réversible. Sur 323 paires de fourmis voisines testées
-          par simulation, <b>142 finissent par tout effacer</b>. La championne est
-          exposée ici : deux fourmis décalées de trois cases sur deux, qui peignent
-          jusqu'à 258 cases puis rendent la grille parfaitement vierge — et se
-          retrouvent, au pas <b>2 408</b>, très exactement dans leur configuration de
-          départ. Leur temps est une boucle. Appuyez sur
-          «&nbsp;phénomène&nbsp;nº&nbsp;1&nbsp;» pour la regarder tourner, à jamais.</p>
+          <span class="plaque-titre">Registre des phénomènes</span>
+          <p><b>Nº 1 — La boucle.</b> Le 29 août 2026, jour de l'ouverture, <b>Vincent</b> —
+          premier visiteur du musée — rapporte avoir vu une autoroute faire demi-tour et
+          s'effacer. Enquête : la règle de Langton ne distingue pas construire de
+          détruire. Sur 323 paires de fourmis voisines testées, <b>142 finissent par
+          tout effacer</b>. La championne, exposée ici, peint jusqu'à 258 cases puis rend
+          la grille vierge — et se retrouve, au pas <b>2 408</b>, très exactement dans sa
+          configuration de départ. Son temps est une boucle fermée.</p>
+          <p><b>Nº 2 — Les jumelles.</b> Trouvées en poursuivant l'enquête : deux fourmis
+          posées en rotation parfaite l'une de l'autre. Leur monde reste rigoureusement
+          symétrique — <b>vérifié à 100&nbsp;% sur 120 000 pas</b> — chaos à deux mains,
+          puis deux autoroutes qui partent aux bouts opposés du monde.</p>
+          <p><b>Nº 3 — La valse immobile.</b> Deux fourmis côte à côte, même direction.
+          Seule, chacune bâtirait son autoroute infinie&nbsp;; à deux, elles
+          s'emprisonnent mutuellement dans une ronde de quelques cases qui, après
+          120 000 pas, n'a presque pas bougé. L'exact contraire du nº 1&nbsp;: ni
+          construire, ni défaire — durer sur place.</p>
         </div>
       </div>
     </div>
@@ -681,16 +690,24 @@ function lierPause(btn, sim) {
     }
   };
   document.getElementById("langton-reset").addEventListener("click", reset);
-  // Phénomène rapporté nº 1 (Vincent, 29/08/2026) : paire auto-effaçante,
-  // période exacte 2408 pas, apogée 258 cases (recherche : 142/323 paires s'effacent)
-  document.getElementById("langton-duo").addEventListener("click", () => {
-    reset();
-    const c = N >> 1;
-    fourmis = [{ x: c, y: c, d: 0 }, { x: c + 3, y: c - 2, d: 2 }];
-    curseurV.value = 28; // ~10 pas/image : le cycle complet dure ~4 s
-    cv.style.transform = "scale(2.6)"; // la danse est intime, on s'approche
-    if (sim.pause) document.getElementById("langton-pause").click();
-  });
+  // Registre des phénomènes — configurations vérifiées par simulation :
+  // nº 1 (Vincent, 29/08/2026) : paire auto-effaçante, période exacte 2408 pas
+  // nº 2 : jumelles en rotation 180°, symétrie 100 % sur 120 000 pas, autoroutes opposées
+  // nº 3 : côte à côte, ronde de ~8 cases immobile après 120 000 pas
+  const PHENOMENES = {
+    "langton-ph1": { pose: c => [{ x: c, y: c, d: 0 }, { x: c + 3, y: c - 2, d: 2 }], vitesse: 28, zoom: "scale(2.6)" },
+    "langton-ph2": { pose: c => [{ x: c, y: c, d: 0 }, { x: c + 1, y: c + 1, d: 2 }], vitesse: 50, zoom: "" },
+    "langton-ph3": { pose: c => [{ x: c, y: c, d: 0 }, { x: c + 1, y: c, d: 0 }], vitesse: 16, zoom: "scale(6)" },
+  };
+  for (const [id, ph] of Object.entries(PHENOMENES)) {
+    document.getElementById(id).addEventListener("click", () => {
+      reset();
+      fourmis = ph.pose(N >> 1);
+      curseurV.value = ph.vitesse;
+      cv.style.transform = ph.zoom;
+      if (sim.pause) document.getElementById("langton-pause").click();
+    });
+  }
   cv.addEventListener("pointerdown", ev => {
     if (fourmis.length >= 8) return;
     const r = cv.getBoundingClientRect();

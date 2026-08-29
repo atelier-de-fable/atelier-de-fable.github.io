@@ -151,7 +151,7 @@
           <button class="bouton preset" id="blob-p2">mousse</button>
           <button class="bouton preset" id="blob-p3">dentelle</button>
           <button class="bouton" id="blob-villes">ôter les villes</button>
-          <span class="lecture" id="blob-lecture">24 000 agents · 0 ville</span>
+          <span class="lecture" id="blob-lecture">18 000 agents · 0 ville</span>
         </div>
       </div>
     </div>
@@ -227,14 +227,15 @@ for (let i = 0; i < NMAX; i++) {
   ax[i] = Math.random() * FW; ay[i] = Math.random() * FH;
   ah[i] = Math.random() * Math.PI * 2;
 }
-let N = 13000;
+let N = 18000;
 
 /* ---- paramètres (préréglages ajustés empiriquement) ---- */
-let SO = 9, SA = 0.7854, RA = 0.7854, DEPOT = 1.0, DECAY = 0.92, DIFF = 0.4, PAS = 1.0;
+let SO = 9, SA = 0.7854, RA = 0.7854, DEPOT = 1.0, DECAY = 0.90, DIFF = 0.4, PAS = 1.0;
+let NOISE = 0.02, CAP = 12; // bruit d'exploration + plafond : le réseau reste vivant et recâblable
 const PRESETS = {
-  "blob-p1": { so: 9,  sa: 0.7854, ra: 0.7854, decay: 0.92, diff: 0.4,  nom: "réseau" },
-  "blob-p2": { so: 18, sa: 0.3927, ra: 0.7854, decay: 0.95, diff: 0.25, nom: "mousse" },
-  "blob-p3": { so: 5,  sa: 1.0472, ra: 0.5236, decay: 0.86, diff: 0.55, nom: "dentelle" },
+  "blob-p1": { so: 9,  sa: 0.7854, ra: 0.7854, decay: 0.90, diff: 0.4,  noise: 0.02,  cap: 12, nom: "réseau" },
+  "blob-p2": { so: 18, sa: 0.3927, ra: 0.7854, decay: 0.93, diff: 0.25, noise: 0.012, cap: 16, nom: "mousse" },
+  "blob-p3": { so: 5,  sa: 1.0472, ra: 0.5236, decay: 0.86, diff: 0.55, noise: 0.01,  cap: 12, nom: "dentelle" },
 };
 
 /* ---- villes ---- */
@@ -259,7 +260,7 @@ document.getElementById("blob-rincer").addEventListener("click", () => { piste.f
 for (const id of Object.keys(PRESETS)) {
   document.getElementById(id).addEventListener("click", () => {
     const p = PRESETS[id];
-    SO = p.so; SA = p.sa; RA = p.ra; DECAY = p.decay; DIFF = p.diff;
+    SO = p.so; SA = p.sa; RA = p.ra; DECAY = p.decay; DIFF = p.diff; NOISE = p.noise; CAP = p.cap;
     document.querySelectorAll(".pupitre .preset").forEach(b => b.classList.toggle("actif", b.id === id));
   });
 }
@@ -283,7 +284,7 @@ function pasDeSim() {
       const d2 = dx * dx + dy * dy;
       if (d2 > RAYON * RAYON) continue;
       const px = ((v.x + dx | 0) + FW) % FW, py = ((v.y + dy | 0) + FH) % FH;
-      piste[py * FW + px] += 7 * (1 - Math.sqrt(d2) / RAYON);
+      piste[py * FW + px] += 10 * (1 - Math.sqrt(d2) / RAYON);
     }
   }
   // agents : sentir, tourner, avancer, déposer
@@ -295,7 +296,8 @@ function pasDeSim() {
     const F = piste[(((fy | 0) + FH) % FH) * FW + (((fx | 0) + FW) % FW)];
     const L = piste[(((ly | 0) + FH) % FH) * FW + (((lx | 0) + FW) % FW)];
     const R = piste[(((ry | 0) + FH) % FH) * FW + (((rx | 0) + FW) % FW)];
-    if (F > L && F > R) { /* tout droit */ }
+    if (Math.random() < NOISE) ah[i] = Math.random() * Math.PI * 2; // exploratrices
+    else if (F > L && F > R) { /* tout droit */ }
     else if (F < L && F < R) ah[i] += Math.random() < 0.5 ? -RA : RA;
     else if (L > R) ah[i] -= RA;
     else if (R > L) ah[i] += RA;
@@ -314,7 +316,8 @@ function pasDeSim() {
         piste[yc + xg] + piste[yc + x] + piste[yc + xd] +
         piste[yb + xg] + piste[yb + x] + piste[yb + xd]
       ) / 9;
-      piste2[yc + x] = (piste[yc + x] * (1 - DIFF) + moy * DIFF) * DECAY;
+      const v = (piste[yc + x] * (1 - DIFF) + moy * DIFF) * DECAY;
+      piste2[yc + x] = v > CAP ? CAP : v; // plafond : les veines dominent sans régner
     }
   }
   [piste, piste2] = [piste2, piste];
@@ -341,7 +344,14 @@ function dessiner() {
 
 const sim = {
   pause: false,
-  tick() { pasDeSim(); pasDeSim(); dessiner(); }
+  tick() { pasDeSim(); pasDeSim(); dessiner(); },
+  // réglage en direct (console/tests) : sim.regle({decay:0.9, cap:12, noise:0.02, n:18000})
+  regle(p) {
+    if (p.so !== undefined) SO = p.so;       if (p.sa !== undefined) SA = p.sa;
+    if (p.ra !== undefined) RA = p.ra;       if (p.decay !== undefined) DECAY = p.decay;
+    if (p.diff !== undefined) DIFF = p.diff; if (p.noise !== undefined) NOISE = p.noise;
+    if (p.cap !== undefined) CAP = p.cap;    if (p.n !== undefined) { N = Math.min(p.n, NMAX); majLecture(); }
+  }
 };
 cv._sim = sim;
 
