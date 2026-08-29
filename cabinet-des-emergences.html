@@ -200,6 +200,13 @@
     color:var(--craie); white-space:pre-wrap; overflow-x:auto;
   }
   .plaque pre b{color:var(--laiton); font-weight:500;}
+  .plaque.registre{margin-top:1.7rem;}
+  .plaque.registre p{
+    margin:0; font-family:var(--serif-b); font-size:.98rem; line-height:1.62;
+    color:var(--craie-2);
+  }
+  .plaque.registre p + p{margin-top:.65em;}
+  .plaque.registre p b{color:var(--craie); font-weight:600;}
 
   .cartel p{margin:0 0 1.05em; color:var(--craie-2); max-width:38em;}
   .cartel p strong{color:var(--craie); font-weight:600;}
@@ -313,6 +320,7 @@
           <div class="pupitre">
             <button class="bouton" id="langton-pause">Pause</button>
             <button class="bouton" id="langton-reset">Recommencer</button>
+            <button class="bouton" id="langton-duo">phénomène nº 1</button>
             <label>vitesse
               <input type="range" id="langton-vitesse" min="0" max="100" value="42" aria-label="Vitesse de la simulation">
             </label>
@@ -337,6 +345,19 @@ inverse la case, avance d'un pas.</pre>
         prouvé jamais. Trois lignes de code, et une question ouverte depuis quarante ans.</p>
         <p class="invite">Attendez l'autoroute — ou cliquez dans la vitrine pour lâcher
         d'autres fourmis et ruiner leur belle œuvre.</p>
+        <div class="plaque registre">
+          <span class="plaque-titre">Registre des phénomènes · nº 1</span>
+          <p>Le 29 août 2026, jour de l'ouverture, <b>Vincent</b> — premier visiteur du
+          musée — rapporte avoir vu une autoroute faire demi-tour et s'effacer.</p>
+          <p>Enquête du conservateur : la règle de Langton ne distingue pas construire
+          de détruire — elle est réversible. Sur 323 paires de fourmis voisines testées
+          par simulation, <b>142 finissent par tout effacer</b>. La championne est
+          exposée ici : deux fourmis décalées de trois cases sur deux, qui peignent
+          jusqu'à 258 cases puis rendent la grille parfaitement vierge — et se
+          retrouvent, au pas <b>2 408</b>, très exactement dans leur configuration de
+          départ. Leur temps est une boucle. Appuyez sur
+          «&nbsp;phénomène&nbsp;nº&nbsp;1&nbsp;» pour la regarder tourner, à jamais.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -620,6 +641,7 @@ function lierPause(btn, sim) {
     grille = new Uint8Array(N * N);
     fourmis = [{ x: N >> 1, y: N >> 1, d: 0 }];
     pas = 0;
+    cv.style.transform = "";
     ctx.fillStyle = fond; ctx.fillRect(0, 0, N, N);
     majPas();
   }
@@ -655,6 +677,16 @@ function lierPause(btn, sim) {
     }
   };
   document.getElementById("langton-reset").addEventListener("click", reset);
+  // Phénomène rapporté nº 1 (Vincent, 29/08/2026) : paire auto-effaçante,
+  // période exacte 2408 pas, apogée 258 cases (recherche : 142/323 paires s'effacent)
+  document.getElementById("langton-duo").addEventListener("click", () => {
+    reset();
+    const c = N >> 1;
+    fourmis = [{ x: c, y: c, d: 0 }, { x: c + 3, y: c - 2, d: 2 }];
+    curseurV.value = 28; // ~10 pas/image : le cycle complet dure ~4 s
+    cv.style.transform = "scale(2.6)"; // la danse est intime, on s'approche
+    if (sim.pause) document.getElementById("langton-pause").click();
+  });
   cv.addEventListener("pointerdown", ev => {
     if (fourmis.length >= 8) return;
     const r = cv.getBoundingClientRect();

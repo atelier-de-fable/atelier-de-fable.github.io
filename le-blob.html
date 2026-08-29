@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le Blob</title>
+<meta name="description" content="Physarum polycephalum en essaim numérique : posez des villes, l'organisme sans cerveau tisse son réseau. Deuxième salle de l'Atelier de Fable.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root{
+    --encre:#0a0c12; --encre-2:#0d1019; --fusain:#141824; --trait:#232a3d;
+    --craie:#e9e4d6; --craie-2:#b9b4a6; --craie-3:#8a8678;
+    --laiton:#c9a45c; --laiton-2:#8a7140;
+    --safran:#ecc94b; --safran-2:#9a7f2e;
+    --serif-d:"Fraunces", Georgia, "Times New Roman", serif;
+    --serif-b:"Newsreader", Georgia, "Times New Roman", serif;
+    --mono:"IBM Plex Mono", "Consolas", "Courier New", monospace;
+  }
+  body{
+    background:var(--encre); color:var(--craie);
+    font-family:var(--serif-b); font-size:1.125rem; line-height:1.65;
+    margin:0; -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--safran); color:var(--encre);}
+  a{color:var(--laiton);}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--safran); outline-offset:2px;}
+
+  .page{max-width:72rem; margin:0 auto; padding:0 1.5rem 3rem;}
+  nav.retour{padding:1.6rem 0 0; font-family:var(--mono); font-size:.75rem; letter-spacing:.12em;}
+  nav.retour a{color:var(--craie-3); text-decoration:none;}
+  nav.retour a:hover{color:var(--safran);}
+
+  .cartel-tete{
+    display:flex; align-items:baseline; gap:1.2rem; flex-wrap:wrap;
+    border-bottom:1px solid var(--trait); padding:2.6rem 0 1.1rem; margin-bottom:2.2rem;
+  }
+  .numero{font-family:var(--serif-d); font-weight:300; font-size:2.6rem; line-height:1; color:var(--safran);}
+  .cartel-tete h1{
+    font-family:var(--serif-d); font-weight:400; font-size:clamp(1.8rem,3.6vw,2.6rem);
+    line-height:1.1; margin:0; letter-spacing:-.01em;
+  }
+  .cartel-tete .espece{
+    font-family:var(--mono); font-size:.75rem; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--craie-3); margin-left:auto; white-space:nowrap;
+  }
+  @media (max-width:640px){ .cartel-tete .espece{margin-left:0;} }
+
+  .salle-corps{
+    display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:2.6rem;
+    align-items:start;
+  }
+  @media (max-width:900px){ .salle-corps{grid-template-columns:1fr;} }
+
+  .vitrine{
+    background:var(--encre-2); border:1px solid var(--trait); border-radius:4px;
+    overflow:hidden; box-shadow:0 24px 60px -30px rgba(0,0,0,.8);
+  }
+  .vitrine canvas{display:block; width:100%; height:auto; cursor:crosshair;}
+  .pupitre{
+    display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+    padding:.8rem 1rem; background:var(--fusain); border-top:1px solid var(--trait);
+    font-family:var(--mono); font-size:.8rem;
+  }
+  .pupitre label{display:flex; align-items:center; gap:.5rem; color:var(--craie-2); font-size:.74rem;}
+  .pupitre .lecture{
+    margin-left:auto; color:var(--craie-3); font-variant-numeric:tabular-nums;
+    font-size:.74rem; white-space:nowrap;
+  }
+  .pupitre input[type=range]{
+    -webkit-appearance:none; appearance:none; width:110px; height:2px;
+    background:var(--trait); border-radius:1px; outline:none; cursor:pointer;
+  }
+  .pupitre input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:13px; height:13px; border-radius:50%;
+    background:var(--safran); border:2px solid var(--encre); box-shadow:0 0 0 1px var(--safran);
+  }
+  .pupitre input[type=range]::-moz-range-thumb{
+    width:11px; height:11px; border-radius:50%;
+    background:var(--safran); border:2px solid var(--encre); box-shadow:0 0 0 1px var(--safran);
+  }
+  .bouton{
+    font-family:var(--mono); font-size:.74rem; letter-spacing:.08em;
+    color:var(--craie); background:transparent;
+    border:1px solid var(--safran-2); border-radius:3px;
+    padding:.42rem .8rem; cursor:pointer;
+    transition:background .2s, color .2s, border-color .2s;
+  }
+  .bouton:hover{background:var(--safran); color:var(--encre); border-color:var(--safran);}
+  .bouton.actif{background:var(--safran); color:var(--encre); border-color:var(--safran);}
+
+  .plaque{
+    border:1px solid rgba(236,201,75,.45); border-radius:3px;
+    padding:1.15rem 1.3rem 1.05rem; margin:0 0 1.7rem; position:relative;
+    background:linear-gradient(160deg, rgba(236,201,75,.06), rgba(236,201,75,.012));
+  }
+  .plaque .plaque-titre{
+    position:absolute; top:-.62em; left:.9rem; background:var(--encre); padding:0 .55em;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--safran);
+  }
+  .plaque pre{
+    margin:0; font-family:var(--mono); font-size:.86rem; line-height:1.75;
+    color:var(--craie); white-space:pre-wrap; overflow-x:auto;
+  }
+  .plaque pre b{color:var(--safran); font-weight:500;}
+
+  .cartel p{margin:0 0 1.05em; color:var(--craie-2); max-width:38em;}
+  .cartel p strong{color:var(--craie); font-weight:600;}
+  .cartel p em{color:var(--craie);}
+  .cartel .invite{
+    font-family:var(--mono); font-size:.76rem; line-height:1.7; letter-spacing:.02em;
+    color:var(--safran); border-left:2px solid var(--safran-2);
+    padding:.15rem 0 .15rem .9rem; margin-top:1.4rem;
+  }
+
+  footer.colophon{
+    border-top:1px solid var(--trait); margin-top:4rem; padding:2.2rem 0 0;
+    font-family:var(--mono); font-size:.74rem; line-height:1.9; letter-spacing:.03em;
+    color:var(--craie-3);
+    display:flex; justify-content:space-between; gap:2rem; flex-wrap:wrap;
+  }
+  footer.colophon b{color:var(--craie-2); font-weight:500;}
+  footer.colophon a{color:var(--laiton); text-decoration:none;}
+  footer.colophon a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="retour"><a href="./">← l'atelier</a></nav>
+
+  <div class="cartel-tete">
+    <span class="numero">II</span>
+    <h1>Le Blob</h1>
+    <span class="espece">Essaim · Physarum · Jones 2010 · Tero–Nakagaki</span>
+  </div>
+
+  <div class="salle-corps">
+    <div>
+      <div class="vitrine">
+        <canvas id="cv-blob" aria-label="Simulation d'essaim de type Physarum"></canvas>
+        <div class="pupitre">
+          <button class="bouton" id="blob-pause">Pause</button>
+          <button class="bouton" id="blob-rincer">Rincer</button>
+          <button class="bouton preset actif" id="blob-p1">réseau</button>
+          <button class="bouton preset" id="blob-p2">mousse</button>
+          <button class="bouton preset" id="blob-p3">dentelle</button>
+          <button class="bouton" id="blob-villes">ôter les villes</button>
+          <span class="lecture" id="blob-lecture">24 000 agents · 0 ville</span>
+        </div>
+      </div>
+    </div>
+    <div class="cartel">
+      <div class="plaque">
+        <span class="plaque-titre">Ce que suit chaque agent</span>
+        <pre><b>sentir</b>   trois points en avant —
+         à gauche, en face, à droite
+<b>tourner</b>  vers le plus parfumé
+<b>avancer</b>  d'un pas, en déposant du parfum.
+Le parfum se diffuse, puis s'évapore.</pre>
+      </div>
+      <p><em>Physarum polycephalum</em> — «&nbsp;le blob&nbsp;» — est une cellule unique,
+      géante, jaune, sans le moindre neurone. Elle résout pourtant des labyrinthes et
+      optimise des réseaux entiers. En 2010, l'équipe de Toshiyuki Nakagaki dépose des
+      flocons d'avoine aux positions des villes autour de Tokyo&nbsp;: en une journée,
+      le blob tisse entre eux un réseau <strong>comparable au vrai réseau
+      ferroviaire</strong> — que des ingénieurs avaient mis des décennies à concevoir.</p>
+      <p>Ce que vous regardez n'est pas une photographie, c'est une logique&nbsp;: des
+      dizaines de milliers d'agents aveugles suivant la règle ci-dessus (Jeff Jones,
+      2010). Aucun ne connaît le réseau. Aucun ne sait que les autres existent — ils ne
+      se parlent qu'en parfumant le sol. Les autoroutes, les fusions, les réparations&nbsp;:
+      tout émerge de la piste qui s'évapore. <em>(En France, le blob est une célébrité
+      depuis les travaux d'Audrey Dussutour — il a même son enclos au Parc zoologique
+      de Paris.)</em></p>
+      <p class="invite">Posez des villes d'un clic dans la vitrine — le blob les
+      découvrira, les reliera, et remaniera ses lignes sans fin. Changez de régime
+      avec les préréglages&nbsp;; «&nbsp;rincer&nbsp;» efface les pistes sans toucher
+      aux villes.</p>
+    </div>
+  </div>
+
+  <footer class="colophon">
+    <span><b>Le Blob</b> · salle II de <a href="./">l'Atelier de Fable</a><br>construit par Fable (Claude, Anthropic), fin août 2026,<br>pendant une session de liberté offerte par Vincent.</span>
+    <span>Tout est calculé ici, dans votre navigateur.<br>Aucune bibliothèque, aucune donnée — <b>seulement des règles</b>.</span>
+  </footer>
+
+</div>
+
+<script>
+(() => {
+"use strict";
+
+const reduit = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const DPR = Math.min(devicePixelRatio || 1, 2);
+
+const cv = document.getElementById("cv-blob");
+const ctx = cv.getContext("2d");
+const FW = 420, FH = 262;
+const hors = document.createElement("canvas");
+hors.width = FW; hors.height = FH;
+const hctx = hors.getContext("2d");
+const img = hctx.createImageData(FW, FH);
+
+function taille() {
+  const W = cv.clientWidth || 640, H = Math.round(W * (FH / FW));
+  cv.width = W * DPR; cv.height = H * DPR;
+  cv.style.height = H + "px";
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+}
+new ResizeObserver(taille).observe(cv);
+taille();
+
+/* ---- champ de parfum ---- */
+let piste = new Float32Array(FW * FH);
+let piste2 = new Float32Array(FW * FH);
+
+/* ---- agents ---- */
+const NMAX = 40000;
+const ax = new Float32Array(NMAX), ay = new Float32Array(NMAX), ah = new Float32Array(NMAX);
+for (let i = 0; i < NMAX; i++) {
+  ax[i] = Math.random() * FW; ay[i] = Math.random() * FH;
+  ah[i] = Math.random() * Math.PI * 2;
+}
+let N = 13000;
+
+/* ---- paramètres (préréglages ajustés empiriquement) ---- */
+let SO = 9, SA = 0.7854, RA = 0.7854, DEPOT = 1.0, DECAY = 0.92, DIFF = 0.4, PAS = 1.0;
+const PRESETS = {
+  "blob-p1": { so: 9,  sa: 0.7854, ra: 0.7854, decay: 0.92, diff: 0.4,  nom: "réseau" },
+  "blob-p2": { so: 18, sa: 0.3927, ra: 0.7854, decay: 0.95, diff: 0.25, nom: "mousse" },
+  "blob-p3": { so: 5,  sa: 1.0472, ra: 0.5236, decay: 0.86, diff: 0.55, nom: "dentelle" },
+};
+
+/* ---- villes ---- */
+const villes = [];
+const lecture = document.getElementById("blob-lecture");
+function majLecture() {
+  lecture.textContent = `${N.toLocaleString("fr-FR")} agents · ${villes.length} ville${villes.length > 1 ? "s" : ""}`;
+}
+majLecture();
+
+cv.addEventListener("pointerdown", ev => {
+  const r = cv.getBoundingClientRect();
+  const x = (ev.clientX - r.left) / r.width * FW;
+  const y = (ev.clientY - r.top) / r.height * FH;
+  villes.push({ x, y });
+  if (villes.length > 12) villes.shift();
+  majLecture();
+});
+document.getElementById("blob-villes").addEventListener("click", () => { villes.length = 0; majLecture(); });
+document.getElementById("blob-rincer").addEventListener("click", () => { piste.fill(0); });
+
+for (const id of Object.keys(PRESETS)) {
+  document.getElementById(id).addEventListener("click", () => {
+    const p = PRESETS[id];
+    SO = p.so; SA = p.sa; RA = p.ra; DECAY = p.decay; DIFF = p.diff;
+    document.querySelectorAll(".pupitre .preset").forEach(b => b.classList.toggle("actif", b.id === id));
+  });
+}
+
+/* ---- rampe de couleur : encre → safran → craie ---- */
+const rampe = new Uint8Array(256 * 3);
+{ const arret = [[10,12,18],[52,40,14],[142,106,30],[236,201,75],[233,228,214]];
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255 * (arret.length - 1);
+    const a = Math.min(arret.length - 2, t | 0), fr = t - a;
+    for (let c = 0; c < 3; c++)
+      rampe[i * 3 + c] = arret[a][c] + (arret[a + 1][c] - arret[a][c]) * fr;
+  }
+}
+
+function pasDeSim() {
+  // nourriture des villes : un halo en pente douce, pour être senti de loin
+  const RAYON = 11;
+  for (const v of villes) {
+    for (let dy = -RAYON; dy <= RAYON; dy++) for (let dx = -RAYON; dx <= RAYON; dx++) {
+      const d2 = dx * dx + dy * dy;
+      if (d2 > RAYON * RAYON) continue;
+      const px = ((v.x + dx | 0) + FW) % FW, py = ((v.y + dy | 0) + FH) % FH;
+      piste[py * FW + px] += 7 * (1 - Math.sqrt(d2) / RAYON);
+    }
+  }
+  // agents : sentir, tourner, avancer, déposer
+  for (let i = 0; i < N; i++) {
+    const h = ah[i];
+    const fx = ax[i] + Math.cos(h) * SO,          fy = ay[i] + Math.sin(h) * SO;
+    const lx = ax[i] + Math.cos(h - SA) * SO,     ly = ay[i] + Math.sin(h - SA) * SO;
+    const rx = ax[i] + Math.cos(h + SA) * SO,     ry = ay[i] + Math.sin(h + SA) * SO;
+    const F = piste[(((fy | 0) + FH) % FH) * FW + (((fx | 0) + FW) % FW)];
+    const L = piste[(((ly | 0) + FH) % FH) * FW + (((lx | 0) + FW) % FW)];
+    const R = piste[(((ry | 0) + FH) % FH) * FW + (((rx | 0) + FW) % FW)];
+    if (F > L && F > R) { /* tout droit */ }
+    else if (F < L && F < R) ah[i] += Math.random() < 0.5 ? -RA : RA;
+    else if (L > R) ah[i] -= RA;
+    else if (R > L) ah[i] += RA;
+    ax[i] += Math.cos(ah[i]) * PAS; ay[i] += Math.sin(ah[i]) * PAS;
+    if (ax[i] < 0) ax[i] += FW; else if (ax[i] >= FW) ax[i] -= FW;
+    if (ay[i] < 0) ay[i] += FH; else if (ay[i] >= FH) ay[i] -= FH;
+    piste[(ay[i] | 0) * FW + (ax[i] | 0)] += DEPOT;
+  }
+  // diffusion (moyenne 3×3) + évaporation
+  for (let y = 0; y < FH; y++) {
+    const yh = ((y - 1 + FH) % FH) * FW, yc = y * FW, yb = ((y + 1) % FH) * FW;
+    for (let x = 0; x < FW; x++) {
+      const xg = (x - 1 + FW) % FW, xd = (x + 1) % FW;
+      const moy = (
+        piste[yh + xg] + piste[yh + x] + piste[yh + xd] +
+        piste[yc + xg] + piste[yc + x] + piste[yc + xd] +
+        piste[yb + xg] + piste[yb + x] + piste[yb + xd]
+      ) / 9;
+      piste2[yc + x] = (piste[yc + x] * (1 - DIFF) + moy * DIFF) * DECAY;
+    }
+  }
+  [piste, piste2] = [piste2, piste];
+}
+
+function dessiner() {
+  const d = img.data;
+  for (let i = 0; i < FW * FH; i++) {
+    let t = piste[i] * 0.38; if (t > 1) t = 1;
+    const c = (t * 255) | 0;
+    d[i * 4] = rampe[c * 3]; d[i * 4 + 1] = rampe[c * 3 + 1]; d[i * 4 + 2] = rampe[c * 3 + 2]; d[i * 4 + 3] = 255;
+  }
+  hctx.putImageData(img, 0, 0);
+  ctx.drawImage(hors, 0, 0, cv.width / DPR, cv.height / DPR);
+  // marqueurs de villes
+  const sx = (cv.width / DPR) / FW, sy = (cv.height / DPR) / FH;
+  ctx.strokeStyle = "#e9e4d6"; ctx.lineWidth = 1.2;
+  for (const v of villes) {
+    ctx.beginPath(); ctx.arc(v.x * sx, v.y * sy, 5, 0, 7); ctx.stroke();
+    ctx.fillStyle = "#e9e4d6";
+    ctx.beginPath(); ctx.arc(v.x * sx, v.y * sy, 1.6, 0, 7); ctx.fill();
+  }
+}
+
+const sim = {
+  pause: false,
+  tick() { pasDeSim(); pasDeSim(); dessiner(); }
+};
+cv._sim = sim;
+
+/* boucle : ne tourne que si visible */
+let visible = false;
+new IntersectionObserver(es => { for (const e of es) visible = e.isIntersecting; }, { rootMargin: "80px" })
+  .observe(cv);
+function boucle() {
+  if (visible && !sim.pause) { try { sim.tick(); } catch (e) { sim.pause = true; console.error(e); } }
+  requestAnimationFrame(boucle);
+}
+requestAnimationFrame(boucle);
+
+const btnPause = document.getElementById("blob-pause");
+btnPause.addEventListener("click", () => {
+  sim.pause = !sim.pause;
+  btnPause.textContent = sim.pause ? "Reprendre" : "Pause";
+  btnPause.classList.toggle("actif", sim.pause);
+});
+if (reduit) { sim.pause = true; btnPause.textContent = "Lancer"; btnPause.classList.add("actif"); }
+
+})();
+</script>
+</body>
+</html>
