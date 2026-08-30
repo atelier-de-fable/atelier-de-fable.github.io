@@ -123,6 +123,8 @@
     width:.8rem; height:.8rem; border-radius:2px; display:inline-block;
     border:1px solid var(--trait); vertical-align:-2px;
   }
+  .pedago .clic{color:var(--vert-2);}
+  .vitrine canvas.pas-a-pas{cursor:pointer;}
   .bouton{
     font-family:var(--mono); font-size:.74rem; letter-spacing:.08em;
     color:var(--craie); background:transparent;
@@ -654,9 +656,10 @@ function dessiner() {
 const elPedago = document.getElementById("pedago");
 const MOTS = { L: "à gauche", R: "à droite", N: "tout droit", U: "demi-tour" };
 function majPedago() {
+  cv.classList.toggle("pas-a-pas", !!(pause && sim && !sim.fini));
   if (!sim || sim.fini) { elPedago.style.display = "none"; return; }
   elPedago.style.display = "";
-  if (psActuel > 300) {
+  if (!pause && psActuel > 300) {
     elPedago.innerHTML = "trop vite pour l'œil — ralentissez (<b>&gt;</b> ou <b>&gt;&gt;</b>) pour suivre la fourmi";
     return;
   }
@@ -666,8 +669,18 @@ function majPedago() {
   elPedago.innerHTML =
     'elle lit <span class="puce" style="background:' + pal[c] + '"></span>' +
     ' <b>' + c + '</b> → tourne <b>' + FLECHE[t] + " " + MOTS[t] + "</b>" +
-    ' → posera <span class="puce" style="background:' + pal[nc] + '"></span> <b>' + nc + "</b>";
+    ' → posera <span class="puce" style="background:' + pal[nc] + '"></span> <b>' + nc + "</b>" +
+    (pause ? ' <span class="clic">· cliquez le monde : +1 pas</span>' : "");
 }
+
+/* pas-à-pas (idée de Vincent, 31/08 01h45) : en pause, un clic sur le monde
+   avance d'un seul pas — le cartouche raconte, le clic exécute. */
+cv.addEventListener("click", function () {
+  if (!pause || !sim || sim.fini) return;
+  const f = avancer(sim, 1);
+  dessiner(); majLecture();
+  if (f) rendreVerdict(f);
+});
 
 /* ---------------- l'établi ---------------- */
 const elCases = document.getElementById("cases"), elLectureRegle = document.getElementById("lecture-regle");
@@ -833,6 +846,7 @@ function boucle() {
 btnPause.addEventListener("click", function () {
   pause = !pause;
   btnPause.classList.toggle("actif", pause);
+  majPedago();
 });
 document.getElementById("rejouer").addEventListener("click", lancer);
 document.getElementById("hasard").addEventListener("click", function () {
@@ -924,6 +938,7 @@ function poser(p) {
     if (!sim.fini) {           /* on s'arrete sur l'instant, pas sur le resultat */
       pause = true;
       btnPause.classList.add("actif");
+      majPedago();
     }
   }
   cv.scrollIntoView({ behavior: "smooth", block: "center" });
