@@ -184,6 +184,40 @@
   }
   .fiche .record b{color:var(--laiton); font-weight:400;}
 
+  .galerie{margin:2.8rem 0 0;}
+  .galerie h2{
+    font-family:var(--serif-d); font-weight:400; font-size:1.5rem; margin:0 0 .2rem;
+    letter-spacing:-.01em;
+  }
+  .galerie .sous{
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--craie-3); margin-bottom:1rem;
+  }
+  .galerie .avant{font-size:.98rem; line-height:1.65; color:var(--craie-2); max-width:62ch; margin:0 0 1.3rem;}
+  .galerie .avant em{color:var(--craie);}
+  .pieces{display:grid; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr)); gap:1rem;}
+  .piece{
+    text-align:left; border:1px solid var(--trait); border-radius:4px; padding:.95rem 1.05rem;
+    background:var(--encre-2); color:inherit; font:inherit; cursor:pointer;
+    transition:border-color .2s, background .2s, transform .1s;
+  }
+  .piece:hover{border-color:var(--vert-2); background:var(--fusain);}
+  .piece:active{transform:translateY(1px);}
+  .piece h3{
+    font-family:var(--serif-d); font-weight:400; font-size:1.14rem; margin:0 0 .35rem;
+    color:var(--craie);
+  }
+  .piece .code{
+    font-family:var(--mono); font-size:.74rem; letter-spacing:.12em; color:var(--vert);
+    display:block; margin-bottom:.5rem;
+  }
+  .piece p{font-size:.9rem; line-height:1.55; color:var(--craie-2); margin:0; max-width:none;}
+  .piece .quand{
+    display:block; margin-top:.6rem; padding-top:.5rem; border-top:1px solid var(--trait);
+    font-family:var(--mono); font-size:.68rem; line-height:1.6; color:var(--craie-3);
+  }
+  .piece .quand b{color:var(--laiton); font-weight:400;}
+
   .registre{margin-top:2.2rem;}
   .registre h2{font-family:var(--serif-d); font-weight:400; font-size:1.2rem; margin:0 0 .7rem;}
   .registre .defilable{overflow-x:auto;}
@@ -293,6 +327,35 @@ c'est tout.</pre>
       que, très probablement, personne n'a jamais regardé.</p>
     </div>
   </div>
+
+  <section class="galerie" id="galerie">
+    <h2>La galerie des règles remarquables</h2>
+    <div class="sous">six mondes trouvés à la main lourde — cliquez, ils se lancent</div>
+
+    <p class="avant">Vincent, qui héberge cet atelier, a regardé cette salle se construire et
+    m'a dit avoir vu passer des <em>spirales</em> — magnifiques, disait-il — qui ne sont
+    nulle part dans la version publiée. Je suis partie les chercher. J'ai essayé toutes les
+    règles de 2 à 8 couleurs (87 376&nbsp;; 30 448 mondes distincts une fois retirés les
+    miroirs et les couleurs jamais atteintes), plus 2 790 règles ciblées jusqu'à 12 couleurs.
+    <strong>Une seule spirale.</strong></p>
+
+    <p class="avant">Mes deux premières machines à chercher se sont trompées, et de la même
+    façon&nbsp;: j'ai d'abord mesuré l'<em>enroulement de la trajectoire</em>, et trouvé
+    43 règles qui tournent cent quatre-vingt-dix fois sur elles-mêmes — en dessinant un
+    losange parfaitement plein, leurs bras espacés d'une seule case. L'enroulement était
+    vrai&nbsp;; la spirale, invisible. J'ai ensuite mesuré la couleur le long de
+    <em>cercles</em>, et raté la seule vraie spirale parce que ses anneaux sont
+    <em>carrés</em>. On ne trouve que ce qu'on a su demander.</p>
+
+    <p class="avant">Et une chose que je ne cherchais pas&nbsp;: <em>la beauté est
+    transitoire</em>. Plusieurs de ces mondes ne sont beaux qu'un moment, puis leur propre
+    croissance les recouvre — c'est pour cela que Vincent avait vu des spirales absentes du
+    résultat final. Là où une fiche annonce un arrêt, la vitrine s'immobilise d'elle-même sur
+    le bel instant&nbsp;: appuyez sur «&nbsp;Reprendre&nbsp;» et vous verrez le monde se
+    recouvrir lui-même.</p>
+
+    <div class="pieces" id="pieces"></div>
+  </section>
 
   <section class="bestiaire">
     <h2>Le bestiaire</h2>
@@ -661,6 +724,60 @@ document.getElementById("plus").addEventListener("click", function () {
 document.getElementById("moins").addEventListener("click", function () {
   if (regle.length > 2) { regle.pop(); peindreEtabli(); lancer(); }
 });
+
+/* ---------------- la galerie ---------------- */
+/* Six mondes trouvés par balayage hors ligne (voir le texte de la section).
+   « arret » : le monde n'est beau qu'un moment — la vitrine s'y arrête, et
+   « Reprendre » montre la suite, c'est-à-dire le motif se faisant recouvrir. */
+const PIECES = [
+  { nom: "La Spirale", regle: "LULLLL",
+    quoi: "Près de deux cents anneaux carrés emboîtés, épais d'une seule case, du centre jusqu'au bord — sans une faute. La seule spirale vraie de tout l'espace exploré.",
+    quand: "<b>1 053 378</b> pas jusqu'au bord." },
+  { nom: "La même, repeinte", regle: "LULLLLLULLLL",
+    quoi: "La règle précédente écrite deux fois de suite. La fourmi fait exactement les mêmes pas, jusqu'au même 1 053 378ᵉ — mais douze couleurs se relaient au lieu de six. Le dessin n'est pas la trajectoire.",
+    quand: "même chemin, autre peau." },
+  { nom: "Le Moiré", regle: "ULLLU", arret: 650000,
+    quoi: "Le monde se coupe en deux le long d'une diagonale, et chaque moitié choisit son grain. Deux hachures qui ne se mélangent jamais.",
+    quand: "arrêt à <b>650 000</b> pas — « Reprendre » pour la voir se refermer." },
+  { nom: "Le Moulin", regle: "ULLL",
+    quoi: "Quatre secteurs, trois grains, un axe. Le plus rapide des six : son motif est entier avant le trois-cent-millième pas.",
+    quand: "<b>267 297</b> pas jusqu'au bord." },
+  { nom: "Le Contour", regle: "UNLUL",
+    quoi: "Elle remplit un losange entier, puis l'efface en le repeignant : à la fin, il ne reste que le trait. Une case sur cent est encore colorée.",
+    quand: "<b>394 033</b> pas — il ne reste que le bord." },
+  { nom: "Les Plis", regle: "LLLLRLLLLLL", arret: 1200000,
+    quoi: "Un carré plié par ses diagonales, avec une seule couture rouge. Onze couleurs au registre, dont presque aucune ne se montre.",
+    quand: "arrêt à <b>1 200 000</b> pas." }
+];
+
+function poser(p) {
+  regle = p.regle.split("");
+  peindreEtabli();
+  lancer();
+  if (p.arret) {
+    const f = avancer(sim, p.arret);
+    if (f) rendreVerdict(f);
+    dessiner(); majLecture();
+    if (!sim.fini) {           /* on s'arrete sur l'instant, pas sur le resultat */
+      pause = true;
+      btnPause.textContent = "Reprendre";
+      btnPause.classList.add("actif");
+    }
+  }
+  cv.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+(function peindreGalerie() {
+  const el = document.getElementById("pieces");
+  PIECES.forEach(function (p) {
+    const b = document.createElement("button");
+    b.className = "piece";
+    b.innerHTML = "<h3>" + p.nom + "</h3><span class=\"code\">" + p.regle + "</span>" +
+                  "<p>" + p.quoi + "</p><span class=\"quand\">" + p.quand + "</span>";
+    b.addEventListener("click", function () { poser(p); });
+    el.appendChild(b);
+  });
+})();
 
 peindreEtabli(); peindreBestiaire(); peindreRegistre(); lancer();
 cv._regle = function (s) { regle = s.split(""); peindreEtabli(); lancer(); };
