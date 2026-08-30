@@ -99,6 +99,12 @@
     margin-left:auto; color:var(--craie-3); font-variant-numeric:tabular-nums;
     font-size:.74rem; white-space:nowrap;
   }
+  .regleur{
+    display:inline-flex; align-items:center; gap:.55rem;
+    font-family:var(--mono); font-size:.68rem; color:var(--craie-3); letter-spacing:.03em;
+  }
+  .regleur input[type=range]{width:8rem; accent-color:var(--vert-2); cursor:pointer;}
+  .regleur .lecture-vitesse{font-variant-numeric:tabular-nums; white-space:nowrap;}
   .bouton{
     font-family:var(--mono); font-size:.74rem; letter-spacing:.08em;
     color:var(--craie); background:transparent;
@@ -274,7 +280,7 @@
           <button class="bouton" id="pause">Pause</button>
           <button class="bouton" id="rejouer">recommencer</button>
           <button class="bouton" id="hasard">au hasard</button>
-          <button class="bouton" id="vite">vite</button>
+          <label class="regleur" for="vitesse" title="vitesse de la simulation — tout à gauche : pas à pas, comme un serpent"><input type="range" id="vitesse" min="0" max="100" value="86" aria-label="vitesse de la simulation"><span class="lecture-vitesse" id="lecture-vitesse">…</span></label>
           <span class="lecture" id="lecture">…</span>
         </div>
       </div>
@@ -408,7 +414,19 @@ const ESPECES = {
 };
 
 let regle = ["R", "L"];
-let sim = null, vite = false, pause = false;
+let sim = null, pause = false;
+
+/* vitesse (demande de Vincent, 31/08) : curseur logarithmique 1 → 150 000 pas/image,
+   et rampe douce à chaque lancement — à pleine vitesse, le « serpent » des premiers
+   pas est invisible (le cerveau est trop lent pour 30 000 pas par image). */
+const VMAX = 150000;
+let cruise = Math.round(Math.pow(VMAX, 0.86)), rampN = Infinity;
+function pasParImage() {
+  if (rampN === Infinity) return cruise;
+  const r = Math.ceil(2 * Math.pow(1.075, rampN++));
+  if (r >= cruise) { rampN = Infinity; return cruise; }
+  return r;
+}
 
 /* rampe laiton → violette, en descendant par les rouges et les magentas.
    L'autre sens (par le jaune-vert) était perceptuellement bien plus lumineux :
@@ -554,12 +572,41 @@ const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 const img = ctx.createImageData(MONDE, MONDE);
 const vue = new Uint32Array(img.data.buffer);
 
+/* caméra (demande de Vincent, 31/08) : le monde naît zoomé ×12 sur la fourmi —
+   les premiers pas ressemblent à un Snake — puis la vue s'élargit d'elle-même
+   en suivant la boîte englobante du dessin, jusqu'au monde entier. */
+const off = document.createElement("canvas");
+off.width = MONDE; off.height = MONDE;
+const offCtx = off.getContext("2d");
+const VUE_MIN = 33;
+let cam = { cx: MONDE >> 1, cy: MONDE >> 1, cote: VUE_MIN };
+function camCible() {
+  const w = sim.maxx - sim.minx + 1, h = sim.maxy - sim.miny + 1;
+  return { cx: (sim.minx + sim.maxx) / 2, cy: (sim.miny + sim.maxy) / 2,
+           cote: Math.min(MONDE, Math.max(VUE_MIN, Math.max(w, h) + 24)) };
+}
+function camSauter() { cam = camCible(); }
+
 function dessiner() {
   vue.set(sim.px);
-  ctx.putImageData(img, 0, 0);
+  offCtx.putImageData(img, 0, 0);
+  const t = camCible();
+  cam.cote += (t.cote - cam.cote) * 0.08;
+  cam.cx += (t.cx - cam.cx) * 0.12;
+  cam.cy += (t.cy - cam.cy) * 0.12;
+  if (Math.abs(cam.cote - t.cote) < 0.5) cam.cote = t.cote;
+  const cote = Math.min(MONDE, cam.cote);
+  const sx = Math.max(0, Math.min(MONDE - cote, cam.cx - cote / 2));
+  const sy = Math.max(0, Math.min(MONDE - cote, cam.cy - cote / 2));
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, MONDE, MONDE);
+  ctx.drawImage(off, sx, sy, cote, cote, 0, 0, MONDE, MONDE);
   if (!sim.fini) {
+    const e = MONDE / cote;
+    const ax = (sim.x + 0.5 - sx) * e, ay = (sim.y + 0.5 - sy) * e;
+    const m = Math.max(3, Math.min(9, e * 0.9));
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(sim.x - 1, sim.y - 1, 3, 3);
+    ctx.fillRect(ax - m / 2, ay - m / 2, m, m);
   }
 }
 
@@ -678,6 +725,8 @@ function majLecture() {
 const reduit = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function lancer() {
   sim = nouveau(regle.slice());
+  cam = { cx: MONDE >> 1, cy: MONDE >> 1, cote: VUE_MIN };
+  rampN = reduit ? Infinity : 0;
   pause = reduit;
   btnPause.textContent = reduit ? "Lancer" : "Pause";
   btnPause.classList.toggle("actif", reduit);
@@ -691,12 +740,16 @@ new IntersectionObserver(function (es) {
 }, { rootMargin: "100px" }).observe(cv);
 
 function boucle() {
-  if (visible && !pause && sim && !sim.fini) {
-    try {
-      const f = avancer(sim, vite ? 150000 : 30000);
-      dessiner(); majLecture();
-      if (f) rendreVerdict(f);
-    } catch (err) { pause = true; console.error(err); }
+  if (visible && sim) {
+    if (!pause && !sim.fini) {
+      try {
+        const f = avancer(sim, pasParImage());
+        dessiner(); majLecture();
+        if (f) rendreVerdict(f);
+      } catch (err) { pause = true; console.error(err); }
+    } else if (sim.fini && Math.abs(cam.cote - camCible().cote) > 0.6) {
+      dessiner();   /* le monde est fini : la caméra finit son dézoom toute seule */
+    }
   }
   requestAnimationFrame(boucle);
 }
@@ -714,10 +767,20 @@ document.getElementById("hasard").addEventListener("click", function () {
   for (let i = 0; i < n; i++) regle.push(TOURS[Math.floor(Math.random() * 4)]);
   peindreEtabli(); lancer();
 });
-const btnVite = document.getElementById("vite");
-btnVite.addEventListener("click", function () {
-  vite = !vite; btnVite.classList.toggle("actif", vite);
+const elVitesse = document.getElementById("vitesse"),
+      elLectureVitesse = document.getElementById("lecture-vitesse");
+function majVitesse() {
+  const parSec = cruise * 60;
+  elLectureVitesse.textContent = parSec < 6000
+    ? parSec.toLocaleString("fr-FR") + " pas/s"
+    : "≈ " + Math.round(parSec / 1000).toLocaleString("fr-FR") + " k pas/s";
+}
+elVitesse.addEventListener("input", function () {
+  cruise = Math.max(1, Math.round(Math.pow(VMAX, elVitesse.value / 100)));
+  rampN = Infinity;   /* la main du visiteur prime sur la rampe de lancement */
+  majVitesse();
 });
+majVitesse();
 document.getElementById("plus").addEventListener("click", function () {
   if (regle.length < 12) { regle.push(TOURS[Math.floor(Math.random() * 4)]); peindreEtabli(); lancer(); }
 });
@@ -755,9 +818,10 @@ function poser(p) {
   peindreEtabli();
   lancer();
   if (p.arret) {
+    rampN = Infinity;
     const f = avancer(sim, p.arret);
     if (f) rendreVerdict(f);
-    dessiner(); majLecture();
+    camSauter(); dessiner(); majLecture();
     if (!sim.fini) {           /* on s'arrete sur l'instant, pas sur le resultat */
       pause = true;
       btnPause.textContent = "Reprendre";
@@ -782,7 +846,7 @@ function poser(p) {
 peindreEtabli(); peindreBestiaire(); peindreRegistre(); lancer();
 cv._regle = function (s) { regle = s.split(""); peindreEtabli(); lancer(); };
 cv._avancer = function (n) {
-  const f = avancer(sim, n); dessiner(); majLecture();
+  const f = avancer(sim, n); camSauter(); dessiner(); majLecture();
   if (f) rendreVerdict(f);
   return f;
 };
