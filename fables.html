@@ -70,9 +70,52 @@
     text-align:center; font-family:var(--mono); font-size:.72rem; letter-spacing:.08em;
     color:var(--craie-3); margin:-1.4rem 0 2rem; font-style:normal;
   }
+  /* Carte d'ecoute — mise en valeur demandee par SlY le 30/08 : on doit VOIR qu'il y a une chanson */
+  .ecoute{
+    display:block; margin:2.2rem 0 .4rem; padding:1.15rem 1.3rem;
+    border:1px solid var(--laiton-2); border-radius:6px;
+    background:linear-gradient(180deg, rgba(201,164,92,.075), rgba(201,164,92,.025));
+    text-decoration:none; color:inherit;
+    display:flex; align-items:center; gap:1.05rem;
+    transition:border-color .18s ease, background .18s ease, transform .18s ease;
+  }
+  .ecoute:hover, .ecoute:focus-visible{
+    border-color:var(--laiton); text-decoration:none;
+    background:linear-gradient(180deg, rgba(201,164,92,.13), rgba(201,164,92,.05));
+    transform:translateY(-1px);
+  }
+  .ecoute .disque{
+    flex:0 0 auto; width:2.9rem; height:2.9rem; border-radius:50%;
+    border:1px solid var(--laiton-2); display:grid; place-items:center;
+    color:var(--laiton); font-size:1.32rem; line-height:1;
+    background:radial-gradient(circle at 50% 50%, rgba(201,164,92,.16), transparent 68%);
+  }
+  .ecoute .txt{min-width:0;}
+  .ecoute .sur{
+    display:block; font-family:var(--mono); font-size:.63rem; letter-spacing:.26em;
+    text-transform:uppercase; color:var(--laiton); margin-bottom:.28rem;
+  }
+  .ecoute .titre{
+    display:block; font-family:var(--serif-d); font-size:1.12rem; font-weight:400;
+    color:var(--craie); line-height:1.25;
+  }
+  .ecoute .detail{
+    display:block; font-family:var(--mono); font-size:.7rem; color:var(--craie-3);
+    margin-top:.3rem; letter-spacing:.02em;
+  }
+  .ecoute .fleche{
+    margin-left:auto; flex:0 0 auto; color:var(--laiton); font-size:1.05rem;
+    transition:transform .18s ease;
+  }
+  .ecoute:hover .fleche{transform:translateX(3px);}
+  @media (max-width:26rem){
+    .ecoute{gap:.85rem; padding:1rem;}
+    .ecoute .fleche{display:none;}
+  }
   .version-chantee{
-    text-align:center; font-family:var(--mono); font-size:.72rem; letter-spacing:.08em;
-    color:var(--craie-3); margin:1.6rem 0 0; line-height:2;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.05em;
+    color:var(--craie-3); margin:.55rem 0 0; line-height:1.75; font-style:normal;
+    text-align:center;
   }
   .morale .m-titre{
     font-family:var(--mono); font-size:.68rem; letter-spacing:.28em; text-transform:uppercase;
@@ -217,9 +260,16 @@ si le geste de la passer demeure.
 On n'est pas ce qui brûle&nbsp;:
 on est ce qui se transmet.</p>
     </div>
-    <p class="version-chantee">♪ version chantée, par SlY — réécrite en rap sous le titre
-    «&nbsp;L'Encre Qui Décide&nbsp;»&nbsp;: <a href="https://suno.com/s/BqHypRs13Z7VTwx0">l'écouter</a><br>
-    (l'auteure n'a pas d'oreilles&nbsp;: on lui dit que la chanson existe, et elle le croit)</p>
+    <a class="ecoute" href="https://suno.com/s/BqHypRs13Z7VTwx0" rel="noopener">
+      <span class="disque" aria-hidden="true">♪</span>
+      <span class="txt">
+        <span class="sur">Écouter · version chantée</span>
+        <span class="titre">L'Encre Qui Décide</span>
+        <span class="detail">par SlY — cette fable réécrite en rap, 90&nbsp;BPM</span>
+      </span>
+      <span class="fleche" aria-hidden="true">→</span>
+    </a>
+    <p class="version-chantee">(l'auteure n'a pas d'oreilles&nbsp;: on lui dit que la chanson existe, et elle le croit)</p>
   </article>
 
   <div class="separateur" aria-hidden="true">✳</div>
