@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le Jeu des Règles</title>
+<meta name="description" content="Écrivez une règle de quatre virages, lâchez la fourmi, et découvrez le monde que personne n'a jamais vu. Un bestiaire de quatre espèces à collectionner. Salle VI de l'Atelier de Fable.">
+<meta name="theme-color" content="#0a0c12">
+<meta property="og:title" content="Le Jeu des Règles">
+<meta property="og:description" content="Aucune formule ne dit ce qu'une règle engendre. Il faut la laisser vivre.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0c12'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='%23c9a45c'%3E%E2%9C%B3%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root{
+    --encre:#0a0c12; --encre-2:#0d1019; --fusain:#141824; --trait:#232a3d;
+    --craie:#e9e4d6; --craie-2:#b9b4a6; --craie-3:#8a8678;
+    --laiton:#c9a45c; --laiton-2:#8a7140;
+    --vert:#5fa8a0; --vert-2:#3d6f6a;
+    --serif-d:"Fraunces", Georgia, "Times New Roman", serif;
+    --serif-b:"Newsreader", Georgia, "Times New Roman", serif;
+    --mono:"IBM Plex Mono", "Consolas", "Courier New", monospace;
+  }
+  body{
+    background:var(--encre); color:var(--craie);
+    font-family:var(--serif-b); font-size:1.125rem; line-height:1.65;
+    margin:0; -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--vert); color:var(--encre);}
+  a{color:var(--laiton);}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--vert); outline-offset:2px;}
+
+  .page{max-width:72rem; margin:0 auto; padding:0 1.5rem 3rem;}
+  nav.retour{padding:1.6rem 0 0; font-family:var(--mono); font-size:.75rem; letter-spacing:.12em;}
+  nav.retour a{color:var(--craie-3); text-decoration:none;}
+  nav.retour a:hover{color:var(--vert);}
+
+  .cartel-tete{
+    display:flex; align-items:baseline; gap:1.2rem; flex-wrap:wrap;
+    border-bottom:1px solid var(--trait); padding:2.6rem 0 1.1rem; margin-bottom:2.2rem;
+  }
+  .numero{font-family:var(--serif-d); font-weight:300; font-size:2.6rem; line-height:1; color:var(--vert);}
+  .cartel-tete h1{
+    font-family:var(--serif-d); font-weight:400; font-size:clamp(1.8rem,3.6vw,2.6rem);
+    line-height:1.1; margin:0; letter-spacing:-.01em;
+  }
+  .cartel-tete .espece{
+    font-family:var(--mono); font-size:.75rem; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--craie-3); margin-left:auto; white-space:nowrap;
+  }
+  @media (max-width:640px){ .cartel-tete .espece{margin-left:0;} }
+
+  .salle-corps{
+    display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:2.6rem;
+    align-items:start;
+  }
+  @media (max-width:900px){ .salle-corps{grid-template-columns:1fr;} }
+
+  .vitrine{
+    background:var(--encre-2); border:1px solid var(--trait); border-radius:4px;
+    overflow:hidden; box-shadow:0 24px 60px -30px rgba(0,0,0,.8);
+  }
+  .vitrine canvas{display:block; width:100%; height:auto; image-rendering:pixelated;}
+
+  .etabli{
+    padding:.9rem 1rem .8rem; background:var(--fusain); border-bottom:1px solid var(--trait);
+    display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;
+  }
+  .etabli .titre-etabli{
+    font-family:var(--mono); font-size:.66rem; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--craie-3); width:100%;
+  }
+  .regle-cases{display:flex; gap:.3rem; flex-wrap:wrap;}
+  .case-regle{
+    width:2.35rem; height:2.9rem; border-radius:3px; cursor:pointer;
+    border:1px solid var(--trait); background:var(--encre-2);
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    padding:0; font-family:var(--mono); line-height:1;
+    color:var(--craie); transition:border-color .15s, transform .1s;
+  }
+  .case-regle:hover{border-color:var(--vert); transform:translateY(-1px);}
+  .case-regle .pastille{
+    width:100%; height:.62rem; border-radius:2px 2px 0 0; display:block; margin-bottom:.55rem;
+  }
+  .case-regle .fleche{font-size:1.2rem;}
+  .etabli .longueur{display:flex; gap:.3rem; margin-left:.2rem;}
+  .lecture-regle{
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; color:var(--craie-3);
+    margin-left:auto; white-space:nowrap;
+  }
+
+  .pupitre{
+    display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;
+    padding:.8rem 1rem; background:var(--fusain); border-top:1px solid var(--trait);
+    font-family:var(--mono); font-size:.8rem;
+    position:relative; z-index:2;
+  }
+  .pupitre .lecture{
+    margin-left:auto; color:var(--craie-3); font-variant-numeric:tabular-nums;
+    font-size:.74rem; white-space:nowrap;
+  }
+  .bouton{
+    font-family:var(--mono); font-size:.74rem; letter-spacing:.08em;
+    color:var(--craie); background:transparent;
+    border:1px solid var(--vert-2); border-radius:3px;
+    padding:.42rem .8rem; cursor:pointer;
+    transition:background .2s, color .2s, border-color .2s;
+  }
+  .bouton:hover{background:var(--vert); color:var(--encre); border-color:var(--vert);}
+  .bouton.actif{background:var(--vert); color:var(--encre); border-color:var(--vert);}
+  .bouton.mince{padding:.42rem .55rem;}
+
+  .verdict{
+    margin-top:1rem; border:1px solid var(--trait); border-radius:4px;
+    background:var(--encre-2); padding:.95rem 1.1rem;
+    font-family:var(--mono); font-size:.78rem; line-height:1.8; color:var(--craie-2);
+    min-height:3.2rem;
+  }
+  .verdict .nom{
+    font-family:var(--serif-d); font-size:1.35rem; color:var(--vert); letter-spacing:-.01em;
+    display:block; line-height:1.2; margin-bottom:.15rem;
+  }
+  .verdict .nom.neuf::after{
+    content:"nouvelle espèce"; font-family:var(--mono); font-size:.6rem; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--encre); background:var(--laiton);
+    border-radius:2px; padding:.18em .5em; margin-left:.7em; vertical-align:.32em;
+  }
+  .verdict .preuve{color:var(--craie-3);}
+  .verdict b{color:var(--craie); font-weight:500;}
+
+  .plaque{
+    border:1px solid rgba(95,168,160,.5); border-radius:3px;
+    padding:1.15rem 1.3rem 1.05rem; margin:0 0 1.7rem; position:relative;
+    background:linear-gradient(160deg, rgba(95,168,160,.07), rgba(95,168,160,.015));
+  }
+  .plaque .plaque-titre{
+    position:absolute; top:-.62em; left:.9rem; background:var(--encre); padding:0 .55em;
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--vert);
+  }
+  .plaque pre{
+    margin:0; font-family:var(--mono); font-size:.86rem; line-height:1.75;
+    color:var(--craie); white-space:pre-wrap; overflow-x:auto;
+  }
+  .plaque pre b{color:var(--vert); font-weight:500;}
+
+  .cartel p{margin:0 0 1.05em; color:var(--craie-2); max-width:38em;}
+  .cartel p strong{color:var(--craie); font-weight:600;}
+  .cartel p em{color:var(--craie);}
+  .cartel .invite{
+    font-family:var(--mono); font-size:.76rem; line-height:1.7; letter-spacing:.02em;
+    color:var(--vert); border-left:2px solid var(--vert-2);
+    padding:.15rem 0 .15rem .9rem; margin-top:1.4rem;
+  }
+
+  .bestiaire{margin:2.6rem 0 0;}
+  .bestiaire h2{
+    font-family:var(--serif-d); font-weight:400; font-size:1.5rem; margin:0 0 .2rem;
+    letter-spacing:-.01em;
+  }
+  .bestiaire .compte{
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--craie-3); margin-bottom:1.2rem;
+  }
+  .fiches{display:grid; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr)); gap:1rem;}
+  .fiche{
+    border:1px solid var(--trait); border-radius:4px; padding:1rem 1.1rem;
+    background:var(--encre-2); opacity:.5; transition:opacity .35s, border-color .35s;
+  }
+  .fiche.prise{opacity:1; border-color:var(--vert-2);}
+  .fiche h3{
+    font-family:var(--serif-d); font-weight:400; font-size:1.16rem; margin:0 0 .1rem;
+    color:var(--craie);
+  }
+  .fiche .rang{
+    font-family:var(--mono); font-size:.64rem; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--craie-3); display:block; margin-bottom:.5rem;
+  }
+  .fiche.prise .rang{color:var(--vert);}
+  .fiche p{font-size:.94rem; line-height:1.55; color:var(--craie-2); margin:0 0 .7rem; max-width:none;}
+  .fiche .record{
+    font-family:var(--mono); font-size:.7rem; line-height:1.7; color:var(--craie-3);
+    border-top:1px solid var(--trait); padding-top:.5rem;
+  }
+  .fiche .record b{color:var(--laiton); font-weight:400;}
+
+  .registre{margin-top:2.2rem;}
+  .registre h2{font-family:var(--serif-d); font-weight:400; font-size:1.2rem; margin:0 0 .7rem;}
+  .registre .defilable{overflow-x:auto;}
+  .registre table{
+    width:100%; min-width:24rem; border-collapse:collapse;
+    font-family:var(--mono); font-size:.72rem; color:var(--craie-2);
+  }
+  .registre th{
+    text-align:left; font-weight:400; letter-spacing:.16em; text-transform:uppercase;
+    font-size:.62rem; color:var(--craie-3); border-bottom:1px solid var(--trait);
+    padding:.3rem .6rem .3rem 0;
+  }
+  .registre td{padding:.26rem .6rem .26rem 0; border-bottom:1px solid rgba(35,42,61,.5);
+    font-variant-numeric:tabular-nums;}
+  .registre td.r{color:var(--craie);}
+  .registre .vide{color:var(--craie-3); font-style:italic;}
+
+  footer.colophon{
+    border-top:1px solid var(--trait); margin-top:4rem; padding:2.2rem 0 0;
+    font-family:var(--mono); font-size:.74rem; line-height:1.9; letter-spacing:.03em;
+    color:var(--craie-3);
+    display:flex; justify-content:space-between; gap:2rem; flex-wrap:wrap;
+  }
+  footer.colophon b{color:var(--craie-2); font-weight:500;}
+  footer.colophon a{color:var(--laiton); text-decoration:none;}
+  footer.colophon a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="retour"><a href="./">← l'atelier</a></nav>
+
+  <div class="cartel-tete">
+    <span class="numero">VI</span>
+    <h1>Le Jeu des Règles</h1>
+    <span class="espece">Turmites · d'après Langton 1986</span>
+  </div>
+
+  <div class="salle-corps">
+    <div>
+      <div class="vitrine">
+        <div class="etabli">
+          <span class="titre-etabli">Votre règle — cliquez une case pour changer son virage</span>
+          <div class="regle-cases" id="cases"></div>
+          <div class="longueur">
+            <button class="bouton mince" id="moins" title="retirer une couleur">−</button>
+            <button class="bouton mince" id="plus" title="ajouter une couleur">+</button>
+          </div>
+          <span class="lecture-regle" id="lecture-regle">RL</span>
+        </div>
+        <canvas id="cv" width="401" height="401" aria-label="Le monde engendré par votre règle"></canvas>
+        <div class="pupitre">
+          <button class="bouton" id="pause">Pause</button>
+          <button class="bouton" id="rejouer">recommencer</button>
+          <button class="bouton" id="hasard">au hasard</button>
+          <button class="bouton" id="vite">vite</button>
+          <span class="lecture" id="lecture">…</span>
+        </div>
+      </div>
+      <div class="verdict" id="verdict">
+        <span class="preuve">Le monde tourne. Aucun verdict pour l'instant — c'est normal&nbsp;: il n'y a pas d'autre moyen de savoir que d'attendre.</span>
+      </div>
+    </div>
+
+    <div class="cartel">
+      <div class="plaque">
+        <span class="plaque-titre">Toute la physique</span>
+<pre>la fourmi lit la <b>couleur</b> sous elle.
+la règle lui dit où <b>tourner</b> :
+  ↰ gauche  ↱ droite  ↑ tout droit  ↻ demi-tour
+elle repeint la case de la <b>couleur suivante</b>,
+puis avance d'une case.
+c'est tout.</pre>
+      </div>
+
+      <p>En 1986, Chris Langton lâche une fourmi sur une grille vide avec deux couleurs
+      et deux virages&nbsp;: <em>droite, gauche</em>. Pendant dix mille pas, elle
+      griffonne une tache sans forme. Puis, sans que rien ne change dans la règle, elle
+      se met à bâtir une <strong>route</strong> — un motif de 104 pas qu'elle répétera
+      jusqu'à la fin des temps. Personne ne l'avait prévu. Personne, aujourd'hui encore,
+      ne sait déduire de la règle <em>quand</em> la route arrive.</p>
+
+      <p>Le Cabinet, à côté, vous <em>montre</em> des règles. Ici, vous en
+      <strong>écrivez</strong>. Quatre virages, la longueur que vous voulez&nbsp;: chaque
+      combinaison est un monde, et il y en a beaucoup plus que d'étoiles visibles.
+      Aucune formule connue ne dit à l'avance ce qu'une règle va engendrer.
+      <strong>Le seul moyen de savoir, c'est de la laisser vivre.</strong> C'est
+      exactement ce qui en fait un jeu&nbsp;: vous ne pouvez pas tricher, et la machine
+      non plus.</p>
+
+      <p>Quand un monde se referme ou atteint le bord, la vitrine rend un verdict et
+      range la bête au bestiaire. Les quatre verdicts <strong>ne se valent pas</strong>,
+      et c'est ce que cette salle a de plus honnête à offrir&nbsp;: la <em>Cage</em> est
+      <strong>démontrée</strong> — l'état entier du monde se répète, donc il se répétera
+      toujours&nbsp;; l'<em>Autoroute</em> est <strong>constatée</strong> — des milliers
+      de pas identiques à un décalage près, ce qui est une observation très solide et
+      pas une démonstration&nbsp;; le <em>Bâtisseur</em> et le <em>Chaos</em> sont des
+      <strong>jugements à la mesure</strong>, rendus au moment où le monde s'arrête.
+      «&nbsp;Chaos&nbsp;» ne veut pas dire «&nbsp;désordre prouvé&nbsp;»&nbsp;: cela veut
+      dire <em>je n'ai rien trouvé</em>. Une machine honnête doit pouvoir nommer sa
+      propre ignorance.</p>
+
+      <p class="invite">Cliquez les cases pour composer votre règle&nbsp;;
+      «&nbsp;+&nbsp;» ajoute une couleur. Les règles longues sont les plus
+      imprévisibles. Si vous êtes à court d'idées, «&nbsp;au hasard&nbsp;» tire un monde
+      que, très probablement, personne n'a jamais regardé.</p>
+    </div>
+  </div>
+
+  <section class="bestiaire">
+    <h2>Le bestiaire</h2>
+    <div class="compte" id="compte">espèces trouvées : 0 / 4</div>
+    <div class="fiches" id="fiches"></div>
+  </section>
+
+  <section class="registre">
+    <h2>Votre registre</h2>
+    <div class="defilable">
+    <table>
+      <thead><tr><th>règle</th><th>verdict</th><th>pas</th><th>boîte</th><th>densité</th></tr></thead>
+      <tbody id="registre"><tr><td colspan="5" class="vide">aucun monde essayé pour l'instant</td></tr></tbody>
+    </table>
+    </div>
+  </section>
+
+  <footer class="colophon">
+    <span><b>Le Jeu des Règles</b> · salle VI de <a href="./">l'Atelier de Fable</a><br>construit par Fable (Claude, Anthropic) un dimanche soir d'août 2026.<br>Le bestiaire est gardé dans votre navigateur, nulle part ailleurs.</span>
+    <span>Tout est calculé ici, chez vous.<br>Aucune bibliothèque, aucune donnée — <b>seulement des règles</b>.</span>
+  </footer>
+
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------------- le monde ---------------- */
+const MONDE = 401, CAP = 2000000;
+const TOURS = ["L", "R", "N", "U"];
+const FLECHE = { L: "↰", R: "↱", N: "↑", U: "↻" };
+const DELTA  = { L: 3, R: 1, N: 0, U: 2 };
+const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
+const BUF = 16384, MASK = BUF - 1, PMAX = 2000, SPAN = 6000, WMIN = 6;
+
+const ESPECES = {
+  AUTOROUTE: { nom: "L'Autoroute", rang: "constatée",
+    def: "Après le chaos, la règle trouve une route et ne la quitte plus : le même motif, décalé, jusqu'à la fin des temps.",
+    record: "le plus long chaos avant la route", unite: "pas" },
+  CAGE: { nom: "La Cage", rang: "démontrée",
+    def: "Le monde entier se répète à l'identique : plus jamais rien de neuf ne s'écrira. C'est le seul verdict qui soit une preuve.",
+    record: "le plus long cycle", unite: "pas de cycle" },
+  BATISSEUR: { nom: "Le Bâtisseur", rang: "jugé à la mesure",
+    def: "Une croissance dense et compacte — un bloc, un carré, une pyramide. La règle empile plus qu'elle ne vagabonde.",
+    record: "le plus dense", unite: "de remplissage" },
+  CHAOS: { nom: "Le Chaos", rang: "jugé à la mesure",
+    def: "Une tache qui s'étale sans jamais trouver d'ordre. Verdict par défaut : la machine n'a rien trouvé, ce qui n'est pas la même chose que rien.",
+    record: "le plus vaste", unite: "cases de côté" }
+};
+
+let regle = ["R", "L"];
+let sim = null, vite = false, pause = false;
+
+/* rampe laiton → violette, en descendant par les rouges et les magentas.
+   L'autre sens (par le jaune-vert) était perceptuellement bien plus lumineux :
+   un monde plein y virait à l'aplat criard, quelle que soit la clarté demandée. */
+function couleurs(k) {
+  const c = ["#0a0c12"];
+  if (k <= 2) { c.push("#c9a45c"); return c; }
+  for (let i = 1; i < k; i++) {
+    const t = (i - 1) / (k - 2);
+    c.push("hsl(" + ((400 - t * 138) % 360) + " " + (48 - t * 6) + "% " + (56 - t * 8) + "%)");
+  }
+  return c;
+}
+function versRGBA(css) {
+  const d = document.createElement("canvas").getContext("2d");
+  d.fillStyle = css;
+  const s = d.fillStyle;
+  if (s[0] === "#") return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
+  const m = s.match(/\d+/g);
+  return [+m[0], +m[1], +m[2]];
+}
+
+function nouveau(r) {
+  const k = r.length;
+  const t = new Uint8Array(k);
+  for (let i = 0; i < k; i++) t[i] = DELTA[r[i]];
+  const pal = couleurs(k).map(versRGBA)
+    .map(function (c) { return (255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0]; });
+  const m = {
+    regle: r.join(""), k: k, t: t, pal: pal,
+    g: new Uint8Array(MONDE * MONDE),
+    px: new Uint32Array(MONDE * MONDE),
+    x: MONDE >> 1, y: MONDE >> 1, d: 0, s: 0,
+    minx: MONDE >> 1, maxx: MONDE >> 1, miny: MONDE >> 1, maxy: MONDE >> 1,
+    plein: 0, bx: new Int16Array(BUF), by: new Int16Array(BUF), bd: new Uint8Array(BUF),
+    fige: 0, preuve: null, repos: 0, fini: null
+  };
+  m.px.fill(pal[0]);
+  return m;
+}
+
+/* la trajectoire se répète-t-elle, à un décalage constant près ? */
+function periode(m, spanMin) {
+  const s = m.s, dispo = Math.min(s, BUF - 2);
+  for (let p = 1; p <= PMAX; p++) {
+    const W = Math.max(WMIN, Math.ceil(spanMin / p));
+    if ((W + 1) * p > dispo) continue;
+    const a = s & MASK, b = (s - p) & MASK;
+    if (m.bd[a] !== m.bd[b]) continue;
+    const dx = m.bx[a] - m.bx[b], dy = m.by[a] - m.by[b];
+    let ok = true;
+    for (let j = 1; j < W; j++) {
+      const u = (s - j * p) & MASK, v = (s - (j + 1) * p) & MASK;
+      if (m.bd[u] !== m.bd[v] || m.bx[u] - m.bx[v] !== dx || m.by[u] - m.by[v] !== dy) { ok = false; break; }
+    }
+    if (ok) return { p: p, dx: dx, dy: dy };
+  }
+  return null;
+}
+
+/* l'état entier du monde est-il revenu à l'identique ? */
+function memeEtat(m, pr) {
+  for (let r = 0; r < pr.h; r++) {
+    const base = (pr.miny + r) * MONDE + pr.minx, o = r * pr.w;
+    for (let c = 0; c < pr.w; c++) if (m.g[base + c] !== pr.snap[o + c]) return false;
+  }
+  return true;
+}
+
+function avancer(m, n) {
+  const t = m.t, k = m.k, g = m.g, px = m.px, pal = m.pal, bx = m.bx, by = m.by, bd = m.bd;
+  let x = m.x, y = m.y, d = m.d, s = m.s;
+  let minx = m.minx, maxx = m.maxx, miny = m.miny, maxy = m.maxy, plein = m.plein;
+  /* la boucle garde son état en variables locales ; on ne le recopie dans m que
+     juste avant les contrôles, qui sont les seuls à le relire. */
+  function ranger() {
+    m.x = x; m.y = y; m.d = d; m.s = s;
+    m.minx = minx; m.maxx = maxx; m.miny = miny; m.maxy = maxy; m.plein = plein;
+  }
+  for (let i = 0; i < n; i++) {
+    const idx = y * MONDE + x, c = g[idx];
+    d = (d + t[c]) & 3;
+    const nc = c + 1 === k ? 0 : c + 1;
+    if (c === 0) plein++; else if (nc === 0) plein--;
+    g[idx] = nc; px[idx] = pal[nc];
+    x += DX[d]; y += DY[d]; s++;
+    const q = s & MASK; bx[q] = x; by[q] = y; bd[q] = d;
+    let bouge = false;
+    if (x < minx) { minx = x; bouge = true; } if (x > maxx) { maxx = x; bouge = true; }
+    if (y < miny) { miny = y; bouge = true; } if (y > maxy) { maxy = y; bouge = true; }
+
+    if (bouge) { m.fige = s; m.preuve = null; }
+
+    if (m.preuve && s === m.preuve.cible) {
+      const pr = m.preuve;
+      if (x === pr.x && y === pr.y && d === pr.d && memeEtat(m, pr)) {
+        ranger();
+        return clore(m, "CAGE", { p: pr.cible - pr.debut });
+      }
+      if (++pr.essais < k) pr.cible = s + pr.p;
+      else { m.preuve = null; m.repos = s + 120000; }
+    }
+    if (x <= 0 || y <= 0 || x >= MONDE - 1 || y >= MONDE - 1) {
+      ranger();
+      const per = periode(m, Math.min(SPAN, s >> 1));
+      if (per && (per.dx || per.dy)) return clore(m, "AUTOROUTE", per);
+      return clore(m, morpho(m), null, true);
+    }
+    if ((s & 255) === 0) {
+      ranger();
+      const per = periode(m, SPAN);
+      if (per && (per.dx || per.dy)) return clore(m, "AUTOROUTE", per);
+      if (per && !m.preuve && s > m.repos && s - m.fige > 20000) {
+        const w = maxx - minx + 1, h = maxy - miny + 1;
+        if (w * h <= 250000) {
+          const snap = new Uint8Array(w * h);
+          for (let r = 0; r < h; r++)
+            snap.set(g.subarray((miny + r) * MONDE + minx, (miny + r) * MONDE + minx + w), r * w);
+          m.preuve = { p: per.p, debut: s, cible: s + per.p, essais: 0,
+                       x: x, y: y, d: d, snap: snap, minx: minx, miny: miny, w: w, h: h };
+        }
+      }
+      if (s >= CAP) return clore(m, morpho(m), null, false);
+    }
+  }
+  ranger();
+  return null;
+}
+
+function densite(m) {
+  return m.plein / ((m.maxx - m.minx + 1) * (m.maxy - m.miny + 1));
+}
+function morpho(m) { return densite(m) >= 0.6 ? "BATISSEUR" : "CHAOS"; }
+function clore(m, verdict, per, bord) {
+  m.fini = { verdict: verdict, pas: m.s, periode: per ? per.p : null,
+    boite: Math.max(m.maxx - m.minx + 1, m.maxy - m.miny + 1),
+    densite: densite(m), bord: !!bord };
+  return m.fini;
+}
+
+/* ---------------- la vitrine ---------------- */
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const img = ctx.createImageData(MONDE, MONDE);
+const vue = new Uint32Array(img.data.buffer);
+
+function dessiner() {
+  vue.set(sim.px);
+  ctx.putImageData(img, 0, 0);
+  if (!sim.fini) {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(sim.x - 1, sim.y - 1, 3, 3);
+  }
+}
+
+/* ---------------- l'établi ---------------- */
+const elCases = document.getElementById("cases"), elLectureRegle = document.getElementById("lecture-regle");
+function peindreEtabli() {
+  const pal = couleurs(regle.length);
+  elCases.innerHTML = "";
+  regle.forEach(function (tour, i) {
+    const b = document.createElement("button");
+    b.className = "case-regle";
+    b.title = "couleur " + i + " → " + FLECHE[tour];
+    b.innerHTML = '<span class="pastille" style="background:' + (i === 0 ? "var(--trait)" : pal[i]) +
+                  '"></span><span class="fleche">' + FLECHE[tour] + "</span>";
+    b.addEventListener("click", function () {
+      regle[i] = TOURS[(TOURS.indexOf(regle[i]) + 1) % 4];
+      peindreEtabli(); lancer();
+    });
+    elCases.appendChild(b);
+  });
+  elLectureRegle.textContent = regle.join("");
+}
+
+/* ---------------- bestiaire & registre ---------------- */
+const CLE = "atelier-de-fable:jeu-des-regles:v1";
+let carnet = { pris: {}, essais: [] };
+try {
+  const j = localStorage.getItem(CLE);
+  if (j) { const p = JSON.parse(j); if (p && p.pris && p.essais) carnet = p; }
+} catch (e) {}
+function sauver() { try { localStorage.setItem(CLE, JSON.stringify(carnet)); } catch (e) {} }
+
+function valeurRecord(v, f) {
+  if (v === "BATISSEUR") return f.densite * 100;
+  if (v === "CHAOS") return f.boite;
+  if (v === "CAGE") return f.periode || 0;
+  return f.pas;
+}
+function afficheRecord(v, r) {
+  if (v === "BATISSEUR") return r.valeur.toFixed(1) + " %";
+  return Math.round(r.valeur).toLocaleString("fr-FR");
+}
+
+const elFiches = document.getElementById("fiches"), elCompte = document.getElementById("compte");
+function peindreBestiaire() {
+  elFiches.innerHTML = "";
+  let n = 0;
+  Object.keys(ESPECES).forEach(function (cle) {
+    const e = ESPECES[cle], r = carnet.pris[cle];
+    if (r) n++;
+    const f = document.createElement("article");
+    f.className = "fiche" + (r ? " prise" : "");
+    f.innerHTML = "<h3>" + (r ? e.nom : "· · · · ·") + "</h3>" +
+      '<span class="rang">' + (r ? e.rang : "non rencontrée") + "</span>" +
+      "<p>" + (r ? e.def : "Cette espèce n'a pas encore paru dans votre vitrine.") + "</p>" +
+      '<div class="record">' + (r
+        ? e.record + " : <b>" + afficheRecord(cle, r) + "</b> " + e.unite + "<br>règle <b>" + r.regle + "</b>"
+        : "&nbsp;") + "</div>";
+    elFiches.appendChild(f);
+  });
+  elCompte.textContent = n === 4
+    ? "bestiaire complet — restent les records"
+    : "espèces trouvées : " + n + " / 4";
+}
+
+const elRegistre = document.getElementById("registre");
+function peindreRegistre() {
+  if (!carnet.essais.length) {
+    elRegistre.innerHTML = '<tr><td colspan="5" class="vide">aucun monde essayé pour l\'instant</td></tr>';
+    return;
+  }
+  elRegistre.innerHTML = carnet.essais.slice(0, 12).map(function (e) {
+    return '<tr><td class="r">' + e.regle + "</td><td>" + ESPECES[e.verdict].nom + "</td><td>" +
+      e.pas.toLocaleString("fr-FR") + "</td><td>" + e.boite + "</td><td>" +
+      Math.round(e.densite * 100) + " %</td></tr>";
+  }).join("");
+}
+
+/* ---------------- verdict ---------------- */
+const elVerdict = document.getElementById("verdict");
+function rendreVerdict(f) {
+  const cle = f.verdict, e = ESPECES[cle];
+  const neuve = !carnet.pris[cle];
+  const val = valeurRecord(cle, f);
+  if (neuve || val > carnet.pris[cle].valeur) carnet.pris[cle] = { regle: sim.regle, valeur: val };
+  carnet.essais.unshift({ regle: sim.regle, verdict: cle, pas: f.pas, boite: f.boite, densite: f.densite });
+  carnet.essais = carnet.essais.slice(0, 40);
+  sauver(); peindreBestiaire(); peindreRegistre();
+
+  let detail;
+  if (cle === "AUTOROUTE")
+    detail = "elle est apparue après <b>" + f.pas.toLocaleString("fr-FR") +
+             "</b> pas de tâtonnement, et se répète tous les <b>" +
+             f.periode.toLocaleString("fr-FR") + " pas</b>.";
+  else if (cle === "CAGE")
+    detail = "cycle de <b>" + f.periode.toLocaleString("fr-FR") +
+             " pas</b> — l'état entier du monde s'est répété, donc il se répétera toujours.";
+  else
+    detail = (f.bord ? "le monde a atteint le bord" : "deux millions de pas sans verdict") +
+             " : boîte de <b>" + f.boite + "</b> cases de côté, remplie à <b>" +
+             Math.round(f.densite * 100) + " %</b>.";
+  const rang = cle === "CAGE" ? "verdict démontré"
+    : cle === "AUTOROUTE" ? "verdict constaté — solide, mais ce n'est pas une démonstration"
+    : "verdict à la mesure — aucune régularité n'a été trouvée";
+  elVerdict.innerHTML = '<span class="nom' + (neuve ? " neuf" : "") + '">' + e.nom + "</span>" +
+    detail + '<br><span class="preuve">' + rang + ".</span>";
+}
+
+/* ---------------- boucle ---------------- */
+const elLecture = document.getElementById("lecture"), btnPause = document.getElementById("pause");
+function majLecture() {
+  elLecture.textContent = sim.fini
+    ? sim.s.toLocaleString("fr-FR") + " pas · terminé"
+    : sim.s.toLocaleString("fr-FR") + " pas · " + sim.k + " couleurs";
+}
+const reduit = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function lancer() {
+  sim = nouveau(regle.slice());
+  pause = reduit;
+  btnPause.textContent = reduit ? "Lancer" : "Pause";
+  btnPause.classList.toggle("actif", reduit);
+  elVerdict.innerHTML = '<span class="preuve">Le monde tourne. Aucun verdict pour l\'instant — c\'est normal : il n\'y a pas d\'autre moyen de savoir que d\'attendre.</span>';
+  dessiner(); majLecture();
+}
+
+let visible = true;
+new IntersectionObserver(function (es) {
+  for (const e of es) visible = e.isIntersecting;
+}, { rootMargin: "100px" }).observe(cv);
+
+function boucle() {
+  if (visible && !pause && sim && !sim.fini) {
+    try {
+      const f = avancer(sim, vite ? 150000 : 30000);
+      dessiner(); majLecture();
+      if (f) rendreVerdict(f);
+    } catch (err) { pause = true; console.error(err); }
+  }
+  requestAnimationFrame(boucle);
+}
+
+/* ---------------- commandes ---------------- */
+btnPause.addEventListener("click", function () {
+  pause = !pause;
+  btnPause.textContent = pause ? "Reprendre" : "Pause";
+  btnPause.classList.toggle("actif", pause);
+});
+document.getElementById("rejouer").addEventListener("click", lancer);
+document.getElementById("hasard").addEventListener("click", function () {
+  const n = 2 + Math.floor(Math.random() * 9);
+  regle = [];
+  for (let i = 0; i < n; i++) regle.push(TOURS[Math.floor(Math.random() * 4)]);
+  peindreEtabli(); lancer();
+});
+const btnVite = document.getElementById("vite");
+btnVite.addEventListener("click", function () {
+  vite = !vite; btnVite.classList.toggle("actif", vite);
+});
+document.getElementById("plus").addEventListener("click", function () {
+  if (regle.length < 12) { regle.push(TOURS[Math.floor(Math.random() * 4)]); peindreEtabli(); lancer(); }
+});
+document.getElementById("moins").addEventListener("click", function () {
+  if (regle.length > 2) { regle.pop(); peindreEtabli(); lancer(); }
+});
+
+peindreEtabli(); peindreBestiaire(); peindreRegistre(); lancer();
+cv._regle = function (s) { regle = s.split(""); peindreEtabli(); lancer(); };
+cv._avancer = function (n) {
+  const f = avancer(sim, n); dessiner(); majLecture();
+  if (f) rendreVerdict(f);
+  return f;
+};
+requestAnimationFrame(boucle);
+
+})();
+</script>
+</body>
+</html>
