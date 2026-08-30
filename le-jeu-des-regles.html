@@ -105,6 +105,8 @@
   }
   .regleur input[type=range]{width:8rem; accent-color:var(--vert-2); cursor:pointer;}
   .regleur .lecture-vitesse{font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .menu-vitesse{display:inline-flex; gap:.25rem;}
+  .menu-vitesse .bouton{min-width:2rem; padding-left:.4rem; padding-right:.4rem;}
   .bouton{
     font-family:var(--mono); font-size:.74rem; letter-spacing:.08em;
     color:var(--craie); background:transparent;
@@ -277,10 +279,16 @@
         </div>
         <canvas id="cv" width="401" height="401" aria-label="Le monde engendré par votre règle"></canvas>
         <div class="pupitre">
-          <button class="bouton" id="pause">Pause</button>
+          <div class="menu-vitesse" role="group" aria-label="vitesse de lecture">
+            <button class="bouton mince" id="pause" title="pause">0</button>
+            <button class="bouton mince v" data-v="0" title="1 pas par seconde">&gt;</button>
+            <button class="bouton mince v" data-v="26" title="60 pas par seconde">&gt;&gt;</button>
+            <button class="bouton mince v" data-v="54" title="6 000 pas par seconde">&gt;&gt;&gt;</button>
+            <button class="bouton mince v" data-v="100" title="plein régime">&gt;&gt;&gt;&gt;</button>
+          </div>
           <button class="bouton" id="rejouer">recommencer</button>
           <button class="bouton" id="hasard">au hasard</button>
-          <label class="regleur" for="vitesse" title="vitesse de la simulation — tout à gauche : pas à pas, comme un serpent"><input type="range" id="vitesse" min="0" max="100" value="86" aria-label="vitesse de la simulation"><span class="lecture-vitesse" id="lecture-vitesse">…</span></label>
+          <label class="regleur" for="vitesse" title="vitesse précise — le menu au-dessus donne les crans"><input type="range" id="vitesse" min="0" max="100" value="90" aria-label="vitesse de la simulation"><span class="lecture-vitesse" id="lecture-vitesse">…</span></label>
           <span class="lecture" id="lecture">…</span>
         </div>
       </div>
@@ -357,7 +365,7 @@ c'est tout.</pre>
     transitoire</em>. Plusieurs de ces mondes ne sont beaux qu'un moment, puis leur propre
     croissance les recouvre — c'est pour cela que Vincent avait vu des spirales absentes du
     résultat final. Là où une fiche annonce un arrêt, la vitrine s'immobilise d'elle-même sur
-    le bel instant&nbsp;: appuyez sur «&nbsp;Reprendre&nbsp;» et vous verrez le monde se
+    le bel instant&nbsp;: relancez une vitesse (&gt;) et vous verrez le monde se
     recouvrir lui-même.</p>
 
     <div class="pieces" id="pieces"></div>
@@ -419,13 +427,21 @@ let sim = null, pause = false;
 /* vitesse (demande de Vincent, 31/08) : curseur logarithmique 1 → 150 000 pas/image,
    et rampe douce à chaque lancement — à pleine vitesse, le « serpent » des premiers
    pas est invisible (le cerveau est trop lent pour 30 000 pas par image). */
-const VMAX = 150000;
-let cruise = Math.round(Math.pow(VMAX, 0.86)), rampN = Infinity;
-function pasParImage() {
-  if (rampN === Infinity) return cruise;
-  const r = Math.ceil(2 * Math.pow(1.075, rampN++));
-  if (r >= cruise) { rampN = Infinity; return cruise; }
-  return r;
+const PS_MAX = 9000000;   /* pas par SECONDE à plein régime */
+function curseurVersPasSec(v) { return Math.max(1, Math.round(Math.pow(10, (v / 100) * Math.log10(PS_MAX)))); }
+let cruise = curseurVersPasSec(90), rampN = Infinity, acc = 0;
+function pasCeTour() {
+  /* rampe en pas/s, puis accumulation fractionnaire :
+     à 1 pas/s, la fourmi avance une fois toutes les 60 images. */
+  let ps = cruise;
+  if (rampN !== Infinity) {
+    const r = 120 * Math.pow(1.075, rampN++);
+    if (r >= cruise) rampN = Infinity; else ps = r;
+  }
+  acc += ps / 60;
+  const n = Math.floor(acc);
+  acc -= n;
+  return n;
 }
 
 /* rampe laiton → violette, en descendant par les rouges et les magentas.
@@ -462,7 +478,7 @@ function nouveau(r) {
     x: MONDE >> 1, y: MONDE >> 1, d: 0, s: 0,
     minx: MONDE >> 1, maxx: MONDE >> 1, miny: MONDE >> 1, maxy: MONDE >> 1,
     plein: 0, bx: new Int16Array(BUF), by: new Int16Array(BUF), bd: new Uint8Array(BUF),
-    fige: 0, preuve: null, repos: 0, fini: null
+    fige: 0, preuve: null, repos: 0, fini: null, libre: false
   };
   m.px.fill(pal[0]);
   return m;
@@ -549,7 +565,7 @@ function avancer(m, n) {
                        x: x, y: y, d: d, snap: snap, minx: minx, miny: miny, w: w, h: h };
         }
       }
-      if (s >= CAP) return clore(m, morpho(m), null, false);
+      if (s >= CAP && !m.libre) return clore(m, morpho(m), null, false);
     }
   }
   ranger();
@@ -713,6 +729,21 @@ function rendreVerdict(f) {
     : "verdict à la mesure — aucune régularité n'a été trouvée";
   elVerdict.innerHTML = '<span class="nom' + (neuve ? " neuf" : "") + '">' + e.nom + "</span>" +
     detail + '<br><span class="preuve">' + rang + ".</span>";
+  /* le plafond juge, mais n'a pas le droit d'immobiliser le monde (question de
+     Vincent, 31/08) : on peut le laisser tourner — un verdict PLUS FORT (bord,
+     cage démontrée) reste possible et remplacera celui-ci. */
+  if (!f.bord && f.pas >= CAP && (cle === "BATISSEUR" || cle === "CHAOS")) {
+    const b = document.createElement("button");
+    b.className = "bouton mince";
+    b.style.marginLeft = ".8rem";
+    b.textContent = "laisser tourner quand même";
+    b.addEventListener("click", function () {
+      sim.libre = true; sim.fini = null;
+      pause = false; btnPause.classList.remove("actif");
+      b.remove();
+    });
+    elVerdict.appendChild(b);
+  }
 }
 
 /* ---------------- boucle ---------------- */
@@ -720,15 +751,15 @@ const elLecture = document.getElementById("lecture"), btnPause = document.getEle
 function majLecture() {
   elLecture.textContent = sim.fini
     ? sim.s.toLocaleString("fr-FR") + " pas · terminé"
-    : sim.s.toLocaleString("fr-FR") + " pas · " + sim.k + " couleurs";
+    : sim.s.toLocaleString("fr-FR") + " pas · " + (sim.libre ? "en roue libre" : sim.k + " couleurs");
 }
 const reduit = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function lancer() {
   sim = nouveau(regle.slice());
   cam = { cx: MONDE >> 1, cy: MONDE >> 1, cote: VUE_MIN };
   rampN = reduit ? Infinity : 0;
+  acc = 0;
   pause = reduit;
-  btnPause.textContent = reduit ? "Lancer" : "Pause";
   btnPause.classList.toggle("actif", reduit);
   elVerdict.innerHTML = '<span class="preuve">Le monde tourne. Aucun verdict pour l\'instant — c\'est normal : il n\'y a pas d\'autre moyen de savoir que d\'attendre.</span>';
   dessiner(); majLecture();
@@ -743,7 +774,8 @@ function boucle() {
   if (visible && sim) {
     if (!pause && !sim.fini) {
       try {
-        const f = avancer(sim, pasParImage());
+        const n = pasCeTour();
+        const f = n ? avancer(sim, n) : null;
         dessiner(); majLecture();
         if (f) rendreVerdict(f);
       } catch (err) { pause = true; console.error(err); }
@@ -757,7 +789,6 @@ function boucle() {
 /* ---------------- commandes ---------------- */
 btnPause.addEventListener("click", function () {
   pause = !pause;
-  btnPause.textContent = pause ? "Reprendre" : "Pause";
   btnPause.classList.toggle("actif", pause);
 });
 document.getElementById("rejouer").addEventListener("click", lancer);
@@ -770,15 +801,26 @@ document.getElementById("hasard").addEventListener("click", function () {
 const elVitesse = document.getElementById("vitesse"),
       elLectureVitesse = document.getElementById("lecture-vitesse");
 function majVitesse() {
-  const parSec = cruise * 60;
-  elLectureVitesse.textContent = parSec < 6000
-    ? parSec.toLocaleString("fr-FR") + " pas/s"
-    : "≈ " + Math.round(parSec / 1000).toLocaleString("fr-FR") + " k pas/s";
+  elLectureVitesse.textContent = cruise < 10000
+    ? cruise.toLocaleString("fr-FR") + " pas/s"
+    : "≈ " + Math.round(cruise / 1000).toLocaleString("fr-FR") + " k pas/s";
+  document.querySelectorAll(".menu-vitesse .v").forEach(function (b) {
+    b.classList.toggle("actif", Number(b.dataset.v) === Number(elVitesse.value));
+  });
 }
 elVitesse.addEventListener("input", function () {
-  cruise = Math.max(1, Math.round(Math.pow(VMAX, elVitesse.value / 100)));
+  cruise = curseurVersPasSec(elVitesse.value);
   rampN = Infinity;   /* la main du visiteur prime sur la rampe de lancement */
   majVitesse();
+});
+document.querySelectorAll(".menu-vitesse .v").forEach(function (b) {
+  b.addEventListener("click", function () {
+    elVitesse.value = b.dataset.v;
+    cruise = curseurVersPasSec(b.dataset.v);
+    rampN = Infinity; acc = 0;
+    if (pause) { pause = false; btnPause.classList.remove("actif"); }
+    majVitesse();
+  });
 });
 majVitesse();
 document.getElementById("plus").addEventListener("click", function () {
@@ -791,7 +833,7 @@ document.getElementById("moins").addEventListener("click", function () {
 /* ---------------- la galerie ---------------- */
 /* Six mondes trouvés par balayage hors ligne (voir le texte de la section).
    « arret » : le monde n'est beau qu'un moment — la vitrine s'y arrête, et
-   « Reprendre » montre la suite, c'est-à-dire le motif se faisant recouvrir. */
+   relancer une vitesse montre la suite, c'est-à-dire le motif se faisant recouvrir. */
 const PIECES = [
   { nom: "La Spirale", regle: "LULLLL",
     quoi: "Près de deux cents anneaux carrés emboîtés, épais d'une seule case, du centre jusqu'au bord — sans une faute. La seule spirale vraie de tout l'espace exploré.",
@@ -801,7 +843,7 @@ const PIECES = [
     quand: "même chemin, autre peau." },
   { nom: "Le Moiré", regle: "ULLLU", arret: 650000,
     quoi: "Le monde se coupe en deux le long d'une diagonale, et chaque moitié choisit son grain. Deux hachures qui ne se mélangent jamais.",
-    quand: "arrêt à <b>650 000</b> pas — « Reprendre » pour la voir se refermer." },
+    quand: "arrêt à <b>650 000</b> pas — relancez une vitesse (&gt;) pour la voir se refermer." },
   { nom: "Le Moulin", regle: "ULLL",
     quoi: "Quatre secteurs, trois grains, un axe. Le plus rapide des six : son motif est entier avant le trois-cent-millième pas.",
     quand: "<b>267 297</b> pas jusqu'au bord." },
@@ -824,7 +866,6 @@ function poser(p) {
     camSauter(); dessiner(); majLecture();
     if (!sim.fini) {           /* on s'arrete sur l'instant, pas sur le resultat */
       pause = true;
-      btnPause.textContent = "Reprendre";
       btnPause.classList.add("actif");
     }
   }
