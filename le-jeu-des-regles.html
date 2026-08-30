@@ -123,7 +123,14 @@
     width:.8rem; height:.8rem; border-radius:2px; display:inline-block;
     border:1px solid var(--trait); vertical-align:-2px;
   }
-  .pedago .clic{color:var(--vert-2);}
+  .pedago .clic{color:var(--vert-2); font-size:.68rem; margin-left:.35rem;}
+  .pedago .grosse{
+    width:1.7rem; height:1.7rem; border-radius:3px; display:inline-block;
+    border:1px solid var(--trait);
+  }
+  .pedago .grosfleche{
+    font-size:1.55rem; line-height:1; color:var(--craie); margin:0 .1rem;
+  }
   .vitrine canvas.pas-a-pas{cursor:pointer;}
   .bouton{
     font-family:var(--mono); font-size:.74rem; letter-spacing:.08em;
@@ -666,11 +673,12 @@ function majPedago() {
   const pal = couleurs(sim.k);
   const c = sim.g[sim.y * MONDE + sim.x];
   const t = sim.regle[c], nc = (c + 1) % sim.k;
+  elPedago.title = "elle lit la couleur de gauche → tourne selon la flèche (" + MOTS[t] + ") → laisse la couleur de droite";
   elPedago.innerHTML =
-    'elle lit <span class="puce" style="background:' + pal[c] + '"></span>' +
-    ' <b>' + c + '</b> → tourne <b>' + FLECHE[t] + " " + MOTS[t] + "</b>" +
-    ' → posera <span class="puce" style="background:' + pal[nc] + '"></span> <b>' + nc + "</b>" +
-    (pause ? ' <span class="clic">· cliquez le monde : +1 pas</span>' : "");
+    '<span class="grosse" style="background:' + pal[c] + '"></span>' +
+    '<span class="grosfleche">' + FLECHE[t] + "</span>" +
+    '<span class="grosse" style="background:' + pal[nc] + '"></span>' +
+    (pause ? '<span class="clic">clic = +1 pas</span>' : "");
 }
 
 /* pas-à-pas (idée de Vincent, 31/08 01h45) : en pause, un clic sur le monde
