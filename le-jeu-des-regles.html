@@ -107,6 +107,9 @@
   .regleur .lecture-vitesse{font-variant-numeric:tabular-nums; white-space:nowrap;}
   .menu-vitesse{display:inline-flex; gap:.25rem;}
   .menu-vitesse .bouton{min-width:2rem; padding-left:.4rem; padding-right:.4rem;}
+  .menu-vitesse .k{
+    font-size:.58em; color:var(--craie-3); margin-left:.22rem; vertical-align:super;
+  }
   .bouton{
     font-family:var(--mono); font-size:.74rem; letter-spacing:.08em;
     color:var(--craie); background:transparent;
@@ -280,11 +283,11 @@
         <canvas id="cv" width="401" height="401" aria-label="Le monde engendré par votre règle"></canvas>
         <div class="pupitre">
           <div class="menu-vitesse" role="group" aria-label="vitesse de lecture">
-            <button class="bouton mince" id="pause" title="pause">0</button>
-            <button class="bouton mince v" data-v="0" title="1 pas par seconde">&gt;</button>
-            <button class="bouton mince v" data-v="26" title="60 pas par seconde">&gt;&gt;</button>
-            <button class="bouton mince v" data-v="54" title="6 000 pas par seconde">&gt;&gt;&gt;</button>
-            <button class="bouton mince v" data-v="100" title="plein régime">&gt;&gt;&gt;&gt;</button>
+            <button class="bouton mince" id="pause" title="pause — touche 1">0<span class="k">1</span></button>
+            <button class="bouton mince v" data-v="0" title="1 pas par seconde — touche 2">&gt;<span class="k">2</span></button>
+            <button class="bouton mince v" data-v="26" title="60 pas par seconde — touche 3">&gt;&gt;<span class="k">3</span></button>
+            <button class="bouton mince v" data-v="54" title="6 000 pas par seconde — touche 4">&gt;&gt;&gt;<span class="k">4</span></button>
+            <button class="bouton mince v" data-v="100" title="plein régime — touche 5">&gt;&gt;&gt;&gt;<span class="k">5</span></button>
           </div>
           <button class="bouton" id="rejouer">recommencer</button>
           <button class="bouton" id="hasard">au hasard</button>
@@ -823,6 +826,20 @@ document.querySelectorAll(".menu-vitesse .v").forEach(function (b) {
   });
 });
 majVitesse();
+
+/* raccourcis clavier (demande de Vincent, 31/08) : la rangée de chiffres.
+   event.code = touche PHYSIQUE — indispensable sur AZERTY, où la rangée du
+   haut tape & é " ' ( sans Shift. Pavé numérique accepté aussi. */
+const menuBoutons = [btnPause].concat(Array.prototype.slice.call(document.querySelectorAll(".menu-vitesse .v")));
+document.addEventListener("keydown", function (ev) {
+  if (ev.ctrlKey || ev.altKey || ev.metaKey) return;
+  const t = ev.target;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+  const m = /^(?:Digit|Numpad)([1-5])$/.exec(ev.code);
+  if (!m) return;
+  menuBoutons[Number(m[1]) - 1].click();
+  ev.preventDefault();
+});
 document.getElementById("plus").addEventListener("click", function () {
   if (regle.length < 12) { regle.push(TOURS[Math.floor(Math.random() * 4)]); peindreEtabli(); lancer(); }
 });
