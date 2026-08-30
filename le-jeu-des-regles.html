@@ -110,6 +110,19 @@
   .menu-vitesse .k{
     font-size:.58em; color:var(--craie-3); margin-left:.22rem; vertical-align:super;
   }
+  .scene{position:relative;}
+  .pedago{
+    position:absolute; left:.55rem; top:.55rem;
+    display:flex; align-items:center; gap:.4rem; flex-wrap:wrap;
+    font-family:var(--mono); font-size:.7rem; letter-spacing:.03em; color:var(--craie-2);
+    background:rgba(10,12,18,.82); border:1px solid var(--trait); border-radius:4px;
+    padding:.32rem .55rem; pointer-events:none; max-width:calc(100% - 1.4rem);
+  }
+  .pedago b{color:var(--craie); font-weight:500;}
+  .pedago .puce{
+    width:.8rem; height:.8rem; border-radius:2px; display:inline-block;
+    border:1px solid var(--trait); vertical-align:-2px;
+  }
   .bouton{
     font-family:var(--mono); font-size:.74rem; letter-spacing:.08em;
     color:var(--craie); background:transparent;
@@ -280,7 +293,10 @@
           </div>
           <span class="lecture-regle" id="lecture-regle">RL</span>
         </div>
-        <canvas id="cv" width="401" height="401" aria-label="Le monde engendré par votre règle"></canvas>
+        <div class="scene">
+          <canvas id="cv" width="401" height="401" aria-label="Le monde engendré par votre règle"></canvas>
+          <div class="pedago" id="pedago" aria-hidden="true"></div>
+        </div>
         <div class="pupitre">
           <div class="menu-vitesse" role="group" aria-label="vitesse de lecture">
             <button class="bouton mince" id="pause" title="pause — touche 1">0<span class="k">1</span></button>
@@ -441,11 +457,13 @@ function pasCeTour() {
     const r = 120 * Math.pow(1.075, rampN++);
     if (r >= cruise) rampN = Infinity; else ps = r;
   }
+  psActuel = ps;
   acc += ps / 60;
   const n = Math.floor(acc);
   acc -= n;
   return n;
 }
+let psActuel = 0;
 
 /* rampe laiton → violette, en descendant par les rouges et les magentas.
    L'autre sens (par le jaune-vert) était perceptuellement bien plus lumineux :
@@ -627,6 +645,28 @@ function dessiner() {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(ax - m / 2, ay - m / 2, m, m);
   }
+  majPedago();
+}
+
+/* le cartouche pédagogue (demande de Vincent, 31/08 01h30) : raconter le pas
+   en cours au novice — lisible seulement quand la vitesse laisse une chance à
+   l'œil, sinon il suggère de ralentir. */
+const elPedago = document.getElementById("pedago");
+const MOTS = { L: "à gauche", R: "à droite", N: "tout droit", U: "demi-tour" };
+function majPedago() {
+  if (!sim || sim.fini) { elPedago.style.display = "none"; return; }
+  elPedago.style.display = "";
+  if (psActuel > 300) {
+    elPedago.innerHTML = "trop vite pour l'œil — ralentissez (<b>&gt;</b> ou <b>&gt;&gt;</b>) pour suivre la fourmi";
+    return;
+  }
+  const pal = couleurs(sim.k);
+  const c = sim.g[sim.y * MONDE + sim.x];
+  const t = sim.regle[c], nc = (c + 1) % sim.k;
+  elPedago.innerHTML =
+    'elle lit <span class="puce" style="background:' + pal[c] + '"></span>' +
+    ' <b>' + c + '</b> → tourne <b>' + FLECHE[t] + " " + MOTS[t] + "</b>" +
+    ' → posera <span class="puce" style="background:' + pal[nc] + '"></span> <b>' + nc + "</b>";
 }
 
 /* ---------------- l'établi ---------------- */
