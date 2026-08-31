@@ -32,10 +32,10 @@
   var fen = null;
   b.addEventListener("click", function () {
     if (fen && !fen.closed) { fen.focus(); return; }
-    fen = window.open("lecteur.html", "atelier-lecteur",
+    fen = window.open("/lecteur.html", "atelier-lecteur",
                       "width=360,height=640,menubar=no,toolbar=no,location=no,status=no");
     if (fen) fen.focus();
-    else window.location.href = "lecteur.html";   /* fenêtre bloquée : on y va quand même */
+    else window.location.href = "/lecteur.html";   /* fenêtre bloquée : on y va quand même. Chemin ABSOLU : le bouton vit aussi dans /visiteurs/, où un chemin relatif donnerait un 404 (bug du 31/08, trouvé par Vincent). */
   });
 
   document.addEventListener("DOMContentLoaded", function () { document.body.appendChild(b); });
