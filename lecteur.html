@@ -51,6 +51,17 @@
   .vol span{font-size:.66rem; color:var(--craie-3); white-space:nowrap;}
   .vol input{width:5.5rem; accent-color:var(--laiton-2); cursor:pointer;}
 
+  .melangeur{border-top:1px dashed var(--trait); padding-top:.6rem;
+    display:flex; flex-direction:column; gap:.4rem;}
+  .melangeur .titre-mel{font-size:.58rem; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--craie-3);}
+  .melangeur .rang{display:flex; flex-wrap:wrap; gap:.32rem;}
+  .bouton.mini{padding:.3rem .55rem; font-size:.66rem; letter-spacing:.03em;
+    border-color:var(--trait); color:var(--craie-3);}
+  .bouton.mini:hover{border-color:var(--laiton-2); color:var(--craie-2);}
+  .bouton.mini.actif{border-color:var(--laiton); background:rgba(201,164,92,.16); color:var(--laiton);}
+  .melangeur .note{font-size:.6rem; line-height:1.7; color:var(--craie-3); margin:.1rem 0 0;}
+
   .etagere{border-top:1px solid var(--trait); padding-top:.7rem;}
   .etagere .entete{font-size:.6rem; letter-spacing:.26em; text-transform:uppercase; color:var(--craie-3); margin-bottom:.5rem;}
   ul{list-style:none; margin:0; padding:0;}
@@ -79,6 +90,8 @@
   <span class="nom" id="nom">—</span>
   <span class="par" id="par"></span>
 </div>
+
+<div class="melangeur" id="melangeur" style="display:none"></div>
 
 <input class="barre" id="position" type="range" min="0" max="1000" value="0" step="1" aria-label="position dans le morceau">
 <div class="temps"><span id="ecoule">0:00</span><span id="duree">—:—</span></div>
@@ -121,7 +134,20 @@
     { nom: "L'Encre Qui Décide",
       par: "par SlY — d'après la fable « L'Éclat et le Carnet » · sol mineur : les 20 instants où si♭ et ré sonnent ensemble reposent tous les 20 sur un sol · 88 BPM, seul des trois à avoir une pulsation franche",
       fichier: "encre-qui-decide.mp3",
-      pochette: "encre-qui-decide.jpg" },
+      pochette: "encre-qui-decide.jpg",
+      /* Separees par Demucs (Meta, MIT) le 1er septembre 2026, 2 min 15 de calcul.
+         Seul morceau qui en a : sur les deux autres, batterie/basse/voix sortent
+         a -77 dB, elles sont vides. Publier des fichiers silencieux n'apprend rien. */
+      pistes: [
+        { nom: "batterie", fichier: "encre-batterie.mp3" },
+        { nom: "basse",    fichier: "encre-basse.mp3" },
+        { nom: "voix",     fichier: "encre-voix.mp3" },
+        { nom: "le reste", fichier: "encre-reste.mp3" }
+      ],
+      motPistes: "Aucune de ces pistes n'a été enregistrée séparément : elles ont été " +
+                 "extraites du mélange par un modèle. La batterie seule donne 175,75 BPM " +
+                 "et la basse seule 87,75 \u2014 la même grille, trouvée par deux " +
+                 "instruments qui ne se sont pas consultés." },
     { nom: "Piano Condenser Sourdine",
       par: "par SlY, 2022 — la mineur : sur 123 instants où do et mi sonnent ensemble, 119 reposent sur un la · 488 notes, 4 tenues à la fois · sans pochette : l'image est le spectre du morceau",
       fichier: "piano-sourdine.mp3",
@@ -136,6 +162,13 @@
   var audio = new Audio();
   audio.preload = "metadata";
   var i = 0, glisse = false, reprise = 0;
+
+  /* Le melangeur. Le mixage d'origine reste l'HORLOGE dans tous les cas : c'est
+     lui qui porte la duree, la position, la boucle et la fin du morceau. Les
+     pistes separees se calent dessus et ne servent que de sortie sonore. Rien
+     du transport ne change, et quand on ecoute le melange (le cas normal) il
+     n'y a qu'un seul fichier en jeu, donc aucun risque de decalage. */
+  var stems = [], melange = true, vol = 0.8;
 
   var elNom = document.getElementById("nom"),
       elPar = document.getElementById("par"),
@@ -155,7 +188,7 @@
   }
   function sauver() {
     try {
-      localStorage.setItem(CLE, JSON.stringify({ i: i, t: audio.currentTime, v: audio.volume, b: audio.loop }));
+      localStorage.setItem(CLE, JSON.stringify({ i: i, t: audio.currentTime, v: vol, b: audio.loop }));
     } catch (e) {}
   }
   function peindreEtagere() {
@@ -184,6 +217,7 @@
     elPoch.src = p.pochette || "";
     elPoch.style.visibility = p.pochette ? "visible" : "hidden";
     document.title = p.nom + " — La Discothèque";
+    construireMelangeur(p);
     peindreEtagere();
     if (jouer) audio.play().catch(function () { majBouton(); });
     majBouton(); sauver();
@@ -191,6 +225,114 @@
   function majBouton() {
     elJouer.textContent = audio.paused ? "▶ jouer" : "❚❚ pause";
   }
+
+  function volumes() {
+    audio.volume = melange ? vol : 0;
+    stems.forEach(function (s) { s.audio.volume = (!melange && s.on) ? vol : 0; });
+  }
+  function majMelangeur() {
+    stems.forEach(function (s) {
+      var a = !melange && s.on;
+      s.bouton.classList.toggle("actif", a);
+      s.bouton.setAttribute("aria-pressed", a ? "true" : "false");
+    });
+    if (elTout) {
+      elTout.classList.toggle("actif", melange);
+      elTout.setAttribute("aria-pressed", melange ? "true" : "false");
+    }
+  }
+  /* Recaler les pistes sur l'horloge. Un simple saut corrige le decalage mais
+     s'entend : il coupe le son. Mesure faite sur place, le decalage naturel
+     tourne autour de 50 ms, ce qui s'entend deja sur une batterie. Donc :
+     gros ecart -> saut ; petit ecart -> on accelere ou ralentit la piste de
+     moins de 2 %, le temps qu'elle rattrape. Inaudible, et sans coupure. */
+  function caler(forcer) {
+    if (melange) return;
+    var t = audio.currentTime;
+    stems.forEach(function (s) {
+      if (audio.paused) {
+        if (!s.audio.paused) s.audio.pause();
+        s.audio.playbackRate = 1;
+        return;
+      }
+      if (s.audio.paused) s.audio.play().catch(function () {});
+      var d = s.audio.currentTime - t;
+      if (forcer || Math.abs(d) > 0.25) {
+        try { s.audio.currentTime = t; } catch (e) {}
+        s.audio.playbackRate = 1;
+      } else if (Math.abs(d) > 0.030) {
+        /* on entre en correction, et fort : 4 % au plus */
+        s.audio.playbackRate = Math.max(0.96, Math.min(1.04, 1 - d * 2.0));
+      } else if (Math.abs(d) < 0.010) {
+        /* on en sort seulement une fois bien recale : sans cette hysteresis
+           le correcteur se bat contre le bruit de mesure et oscille. */
+        if (s.audio.playbackRate !== 1) s.audio.playbackRate = 1;
+      }
+    });
+  }
+  function auMelange() {
+    melange = true;
+    stems.forEach(function (s) { s.on = true; s.audio.pause(); });
+    volumes(); majMelangeur();
+  }
+  function basculer(s) {
+    if (melange) {
+      melange = false;
+      stems.forEach(function (x) {
+        x.on = false;
+        x.audio.preload = "auto";
+        /* poser l'aiguille SEULEMENT quand le fichier sait ou il en est :
+           avant, tout appel a currentTime tombe dans le vide sans rien dire,
+           et la piste demarre a zero avec 200 ms de retard a rattraper. */
+        var poser = function () {
+          try { x.audio.currentTime = audio.currentTime; } catch (e) {}
+          if (!audio.paused) x.audio.play().catch(function () {});
+        };
+        if (x.audio.readyState >= 1) poser();
+        else x.audio.addEventListener("loadedmetadata", poser, { once: true });
+      });
+      s.on = true;
+    } else {
+      s.on = !s.on;
+      if (!stems.some(function (x) { return x.on; })) { auMelange(); return; }
+    }
+    volumes(); majMelangeur(); caler(true);
+  }
+  var elMel = document.getElementById("melangeur"), elTout = null;
+  function construireMelangeur(p) {
+    stems.forEach(function (s) { s.audio.pause(); s.audio.removeAttribute("src"); });
+    stems = []; melange = true; elTout = null;
+    elMel.innerHTML = "";
+    if (!p.pistes || !p.pistes.length) { elMel.style.display = "none"; return; }
+    elMel.style.display = "";
+    var t = document.createElement("span");
+    t.className = "titre-mel"; t.textContent = "pistes s\u00e9par\u00e9es";
+    elMel.appendChild(t);
+    var rang = document.createElement("div"); rang.className = "rang";
+    var b0 = document.createElement("button");
+    b0.className = "bouton mini actif"; b0.textContent = "le m\u00e9lange";
+    b0.title = "le morceau tel qu'il a \u00e9t\u00e9 compos\u00e9";
+    b0.addEventListener("click", auMelange);
+    elTout = b0; rang.appendChild(b0);
+    p.pistes.forEach(function (d) {
+      var a = new Audio();
+      a.preload = "none"; a.src = d.fichier; a.volume = 0; a.loop = audio.loop;
+      var s = { nom: d.nom, audio: a, on: true };
+      var b = document.createElement("button");
+      b.className = "bouton mini"; b.textContent = d.nom;
+      b.title = "n'entendre que ce qui est allum\u00e9";
+      b.addEventListener("click", function () { basculer(s); });
+      s.bouton = b; stems.push(s); rang.appendChild(b);
+    });
+    elMel.appendChild(rang);
+    if (p.motPistes) {
+      var n = document.createElement("p");
+      n.className = "note"; n.textContent = p.motPistes;
+      elMel.appendChild(n);
+    }
+    volumes(); majMelangeur();
+  }
+  setInterval(function () { caler(false); }, 100);
 
   audio.addEventListener("timeupdate", function () {
     if (!glisse && isFinite(audio.duration) && audio.duration > 0) {
@@ -206,8 +348,9 @@
     if (reprise > 0 && reprise < audio.duration) { audio.currentTime = reprise; }
     reprise = 0;
   });
-  audio.addEventListener("play", majBouton);
-  audio.addEventListener("pause", majBouton);
+  audio.addEventListener("play", function () { majBouton(); caler(true); });
+  audio.addEventListener("pause", function () { majBouton(); caler(false); });
+  audio.addEventListener("seeked", function () { caler(true); });
   audio.addEventListener("ended", function () {
     if (audio.loop) return;                       /* le navigateur reboucle seul */
     if (PISTES.length > 1) charger(i + 1, true); else majBouton();
@@ -229,14 +372,16 @@
                                 : "répéter ce morceau sans fin";
   }
   elBoucle.addEventListener("click", function () {
-    audio.loop = !audio.loop; majBoucle(); sauver();
+    audio.loop = !audio.loop;
+    stems.forEach(function (s2) { s2.audio.loop = audio.loop; });
+    majBoucle(); sauver();
   });
   elPos.addEventListener("input", function () { glisse = true; });
   elPos.addEventListener("change", function () {
     if (isFinite(audio.duration)) audio.currentTime = audio.duration * elPos.value / 1000;
-    glisse = false;
+    glisse = false; caler(true);
   });
-  elVol.addEventListener("input", function () { audio.volume = elVol.value / 100; sauver(); });
+  elVol.addEventListener("input", function () { vol = elVol.value / 100; volumes(); sauver(); });
   document.addEventListener("keydown", function (e) {
     if (e.target && e.target.tagName === "INPUT") return;
     if (e.code === "Space") { e.preventDefault(); elJouer.click(); }
@@ -245,15 +390,19 @@
   /* reprise : volume, morceau et position de la dernière écoute */
   var etat = null;
   try { etat = JSON.parse(localStorage.getItem(CLE) || "null"); } catch (e) {}
-  audio.volume = etat && typeof etat.v === "number" ? etat.v : 0.8;
-  elVol.value = Math.round(audio.volume * 100);
+  vol = etat && typeof etat.v === "number" ? etat.v : 0.8;
+  audio.volume = vol;
+  elVol.value = Math.round(vol * 100);
   audio.loop = !!(etat && etat.b);
   majBoucle();
   reprise = etat && typeof etat.t === "number" ? etat.t : 0;
   charger(etat && typeof etat.i === "number" ? etat.i : 0, false);
 
   /* exposé pour la vérification depuis la console */
-  window._lecteur = { audio: audio, pistes: PISTES, charger: charger };
+  window._lecteur = { audio: audio, pistes: PISTES, charger: charger,
+    stems: function () { return stems; }, melange: function () { return melange; },
+    basculer: function (n) { stems.forEach(function (s) { if (s.nom === n) basculer(s); }); },
+    auMelange: auMelange };
 })();
 </script>
 </body>
