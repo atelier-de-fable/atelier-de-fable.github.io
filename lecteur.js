@@ -10,14 +10,15 @@
   var css = document.createElement("style");
   css.textContent =
     ".appel-disco{position:fixed; right:1rem; bottom:1rem; z-index:50;" +
-    "font-family:'IBM Plex Mono',Consolas,monospace; font-size:.7rem; letter-spacing:.14em;" +
+    "font-family:'IBM Plex Mono',Consolas,monospace; font-size:.82rem; letter-spacing:.14em; font-weight:500;" +
     "color:#e9e4d6; background:rgba(10,12,18,.92); border:1px solid #8a7140; border-radius:999px;" +
-    "padding:.5rem .95rem; cursor:pointer; display:flex; align-items:center; gap:.45rem;" +
+    "padding:.72rem 1.25rem; cursor:pointer; display:flex; align-items:center; gap:.45rem;" +
     "backdrop-filter:blur(3px); transition:border-color .18s, background .18s, transform .18s;}" +
-    ".appel-disco:hover{border-color:#c9a45c; background:rgba(20,24,36,.96); transform:translateY(-1px);}" +
+    ".appel-disco{box-shadow:0 6px 22px -8px rgba(0,0,0,.9);}" +
+    ".appel-disco:hover{border-color:#c9a45c; background:rgba(20,24,36,.96); transform:translateY(-2px);}" +
     ".appel-disco:focus-visible{outline:2px solid #c9a45c; outline-offset:2px;}" +
-    ".appel-disco .n{color:#c9a45c; font-size:.9rem; line-height:1;}" +
-    "@media (max-width:520px){.appel-disco .t{display:none;} .appel-disco{padding:.6rem .7rem;}}" +
+    ".appel-disco .n{color:#c9a45c; font-size:1.15rem; line-height:1;}" +
+    "@media (max-width:520px){.appel-disco{padding:.65rem .95rem; font-size:.76rem;}}" +
     "@media print{.appel-disco{display:none;}}";
   document.head.appendChild(css);
 
