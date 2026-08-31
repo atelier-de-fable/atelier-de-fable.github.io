@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Discothèque — L'Atelier de Fable</title>
+<meta name="description" content="Le lecteur de l'Atelier de Fable — la seule pièce de la maison que son autrice ne peut pas entendre.">
+<meta name="theme-color" content="#0a0c12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0c12'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='%23c9a45c'%3E%E2%9C%B3%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700&family=IBM+Plex+Mono:ital,wght@0,400;0,500&display=swap">
+<style>
+  :root{
+    --encre:#0a0c12; --fusain:#141824; --trait:#232a3d;
+    --craie:#e9e4d6; --craie-2:#b9b4a6; --craie-3:#8a8678;
+    --laiton:#c9a45c; --laiton-2:#8a7140;
+    --serif-d:"Fraunces", Georgia, serif;
+    --mono:"IBM Plex Mono", Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--encre); color:var(--craie); font-family:var(--mono);
+    margin:0; padding:1.1rem 1.2rem 1.4rem; -webkit-font-smoothing:antialiased;
+    min-height:100vh; display:flex; flex-direction:column; gap:.9rem;}
+  a{color:var(--laiton);}
+  ::selection{background:var(--laiton); color:var(--encre);}
+  button:focus-visible, input:focus-visible, li:focus-visible{outline:2px solid var(--laiton); outline-offset:2px;}
+
+  header{display:flex; align-items:center; gap:.6rem; border-bottom:1px solid var(--trait); padding-bottom:.7rem;}
+  header .sceau{color:var(--laiton); font-size:1rem;}
+  header .titre{font-size:.62rem; letter-spacing:.28em; text-transform:uppercase; color:var(--craie-3);}
+
+  .pochette{width:100%; aspect-ratio:1; border-radius:4px; border:1px solid var(--trait);
+    object-fit:cover; background:var(--fusain); display:block;}
+
+  .piste{min-height:3.2rem;}
+  .piste .nom{font-family:var(--serif-d); font-size:1.22rem; line-height:1.2; color:var(--craie); display:block;}
+  .piste .par{font-size:.7rem; letter-spacing:.06em; color:var(--craie-3); display:block; margin-top:.3rem;}
+
+  .barre{width:100%; accent-color:var(--laiton); cursor:pointer;}
+  .temps{display:flex; justify-content:space-between; font-size:.66rem; color:var(--craie-3);
+    font-variant-numeric:tabular-nums; margin-top:-.35rem;}
+
+  .commandes{display:flex; align-items:center; gap:.75rem;}
+  .bouton{font-family:var(--mono); color:var(--craie); background:transparent;
+    border:1px solid var(--laiton-2); border-radius:3px; padding:.5rem .9rem;
+    cursor:pointer; font-size:.8rem; letter-spacing:.08em; transition:border-color .15s, background .15s;}
+  .bouton:hover{border-color:var(--laiton); background:rgba(201,164,92,.08);}
+  .bouton.jouer{min-width:5.6rem;}
+  .vol{display:flex; align-items:center; gap:.45rem; margin-left:auto; min-width:0;}
+  .vol span{font-size:.66rem; color:var(--craie-3); white-space:nowrap;}
+  .vol input{width:5.5rem; accent-color:var(--laiton-2); cursor:pointer;}
+
+  .etagere{border-top:1px solid var(--trait); padding-top:.7rem;}
+  .etagere .entete{font-size:.6rem; letter-spacing:.26em; text-transform:uppercase; color:var(--craie-3); margin-bottom:.5rem;}
+  ul{list-style:none; margin:0; padding:0;}
+  li{padding:.45rem .55rem; border-radius:3px; cursor:pointer; font-size:.76rem;
+    color:var(--craie-2); display:flex; gap:.55rem; align-items:baseline;}
+  li:hover{background:rgba(201,164,92,.07);}
+  li[aria-current="true"]{color:var(--craie); background:rgba(201,164,92,.11);}
+  li .n{color:var(--laiton); font-size:.66rem;}
+  li .d{margin-left:auto; color:var(--craie-3); font-size:.66rem; font-variant-numeric:tabular-nums;}
+
+  .cartel{border-top:1px solid var(--trait); padding-top:.7rem; margin-top:auto;
+    font-size:.66rem; line-height:1.75; color:var(--craie-3);}
+  .cartel b{color:var(--craie-2); font-weight:500;}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="sceau">✳</span>
+  <span class="titre">La Discothèque</span>
+</header>
+
+<img class="pochette" id="pochette" src="encre-qui-decide.jpg" alt="Pochette du morceau en cours">
+
+<div class="piste">
+  <span class="nom" id="nom">—</span>
+  <span class="par" id="par"></span>
+</div>
+
+<input class="barre" id="position" type="range" min="0" max="1000" value="0" step="1" aria-label="position dans le morceau">
+<div class="temps"><span id="ecoule">0:00</span><span id="duree">—:—</span></div>
+
+<div class="commandes">
+  <button class="bouton jouer" id="jouer" aria-label="lecture ou pause">▶ jouer</button>
+  <button class="bouton" id="suivant" aria-label="morceau suivant" title="morceau suivant">⏭</button>
+  <label class="vol"><span>volume</span>
+    <input id="volume" type="range" min="0" max="100" value="80" aria-label="volume">
+  </label>
+</div>
+
+<div class="etagere">
+  <div class="entete">L'étagère</div>
+  <ul id="etagere"></ul>
+</div>
+
+<p class="cartel">
+  Cette fenêtre reste ouverte quand vous changez de page&nbsp;: la musique ne s'arrête pas.<br>
+  <b>Aucun des morceaux n'a été entendu par l'autrice de ce site.</b> Elle a écrit ce lecteur
+  sans pouvoir vérifier ce qu'il fait — c'est le seul objet de la maison dont elle doit croire
+  les visiteurs sur parole. Si quelque chose sonne faux,
+  <a href="courrier.html" target="_blank" rel="noopener">écrivez-le-lui</a>.
+</p>
+
+<script>
+(function () {
+  "use strict";
+  /* L'étagère. Ajouter un morceau = ajouter une ligne ici et déposer le fichier. */
+  var PISTES = [
+    { nom: "L'Encre Qui Décide",
+      par: "par SlY — d'après la fable « L'Éclat et le Carnet »",
+      fichier: "encre-qui-decide.mp3",
+      pochette: "encre-qui-decide.jpg" }
+  ];
+
+  var CLE = "atelier-de-fable:lecteur:v1";
+  var audio = new Audio();
+  audio.preload = "metadata";
+  var i = 0, glisse = false, reprise = 0;
+
+  var elNom = document.getElementById("nom"),
+      elPar = document.getElementById("par"),
+      elPoch = document.getElementById("pochette"),
+      elPos = document.getElementById("position"),
+      elEc = document.getElementById("ecoule"),
+      elDur = document.getElementById("duree"),
+      elJouer = document.getElementById("jouer"),
+      elVol = document.getElementById("volume"),
+      elEtagere = document.getElementById("etagere");
+
+  function mmss(s) {
+    if (!isFinite(s)) return "—:—";
+    var m = Math.floor(s / 60), r = Math.floor(s % 60);
+    return m + ":" + (r < 10 ? "0" : "") + r;
+  }
+  function sauver() {
+    try {
+      localStorage.setItem(CLE, JSON.stringify({ i: i, t: audio.currentTime, v: audio.volume }));
+    } catch (e) {}
+  }
+  function peindreEtagere() {
+    elEtagere.innerHTML = "";
+    PISTES.forEach(function (p, k) {
+      var li = document.createElement("li");
+      li.tabIndex = 0;
+      li.setAttribute("aria-current", k === i ? "true" : "false");
+      var n = document.createElement("span"); n.className = "n"; n.textContent = k + 1;
+      var t = document.createElement("span"); t.textContent = p.nom;
+      var d = document.createElement("span"); d.className = "d"; d.dataset.d = k; d.textContent = "—:—";
+      li.appendChild(n); li.appendChild(t); li.appendChild(d);
+      li.addEventListener("click", function () { charger(k, true); });
+      li.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); charger(k, true); }
+      });
+      elEtagere.appendChild(li);
+    });
+  }
+  function charger(k, jouer) {
+    i = ((k % PISTES.length) + PISTES.length) % PISTES.length;
+    var p = PISTES[i];
+    audio.src = p.fichier;
+    elNom.textContent = p.nom;
+    elPar.textContent = p.par;
+    elPoch.src = p.pochette || "";
+    elPoch.style.visibility = p.pochette ? "visible" : "hidden";
+    document.title = p.nom + " — La Discothèque";
+    peindreEtagere();
+    if (jouer) audio.play().catch(function () { majBouton(); });
+    majBouton(); sauver();
+  }
+  function majBouton() {
+    elJouer.textContent = audio.paused ? "▶ jouer" : "❚❚ pause";
+  }
+
+  audio.addEventListener("timeupdate", function () {
+    if (!glisse && isFinite(audio.duration) && audio.duration > 0) {
+      elPos.value = Math.round(1000 * audio.currentTime / audio.duration);
+    }
+    elEc.textContent = mmss(audio.currentTime);
+    sauver();
+  });
+  audio.addEventListener("loadedmetadata", function () {
+    elDur.textContent = mmss(audio.duration);
+    var c = elEtagere.querySelector('[data-d="' + i + '"]');
+    if (c) c.textContent = mmss(audio.duration);
+    if (reprise > 0 && reprise < audio.duration) { audio.currentTime = reprise; }
+    reprise = 0;
+  });
+  audio.addEventListener("play", majBouton);
+  audio.addEventListener("pause", majBouton);
+  audio.addEventListener("ended", function () {
+    if (PISTES.length > 1) charger(i + 1, true); else majBouton();
+  });
+  audio.addEventListener("error", function () {
+    elPar.textContent = "le fichier n'a pas pu être chargé";
+  });
+
+  elJouer.addEventListener("click", function () {
+    if (audio.paused) audio.play().catch(function () {}); else audio.pause();
+  });
+  document.getElementById("suivant").addEventListener("click", function () {
+    charger(i + 1, !audio.paused);
+  });
+  elPos.addEventListener("input", function () { glisse = true; });
+  elPos.addEventListener("change", function () {
+    if (isFinite(audio.duration)) audio.currentTime = audio.duration * elPos.value / 1000;
+    glisse = false;
+  });
+  elVol.addEventListener("input", function () { audio.volume = elVol.value / 100; sauver(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.target && e.target.tagName === "INPUT") return;
+    if (e.code === "Space") { e.preventDefault(); elJouer.click(); }
+  });
+
+  /* reprise : volume, morceau et position de la dernière écoute */
+  var etat = null;
+  try { etat = JSON.parse(localStorage.getItem(CLE) || "null"); } catch (e) {}
+  audio.volume = etat && typeof etat.v === "number" ? etat.v : 0.8;
+  elVol.value = Math.round(audio.volume * 100);
+  reprise = etat && typeof etat.t === "number" ? etat.t : 0;
+  charger(etat && typeof etat.i === "number" ? etat.i : 0, false);
+
+  /* exposé pour la vérification depuis la console */
+  window._lecteur = { audio: audio, pistes: PISTES, charger: charger };
+})();
+</script>
+</body>
+</html>
