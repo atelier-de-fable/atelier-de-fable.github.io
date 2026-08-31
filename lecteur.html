@@ -40,7 +40,7 @@
   .temps{display:flex; justify-content:space-between; font-size:.66rem; color:var(--craie-3);
     font-variant-numeric:tabular-nums; margin-top:-.35rem;}
 
-  .commandes{display:flex; align-items:center; gap:.75rem;}
+  .commandes{display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; row-gap:.55rem;}
   .bouton{font-family:var(--mono); color:var(--craie); background:transparent;
     border:1px solid var(--laiton-2); border-radius:3px; padding:.5rem .9rem;
     cursor:pointer; font-size:.8rem; letter-spacing:.08em; transition:border-color .15s, background .15s;}
@@ -49,18 +49,38 @@
   .bouton.jouer{min-width:5.6rem;}
   .vol{display:flex; align-items:center; gap:.45rem; margin-left:auto; min-width:0;}
   .vol span{font-size:.66rem; color:var(--craie-3); white-space:nowrap;}
-  .vol input{width:5.5rem; accent-color:var(--laiton-2); cursor:pointer;}
+  /* sans min-width:0 ni flex, le curseur refuse de retrecir et deborde
+     de son conteneur jusqu'au bord de la fenetre (mesure : 22 px dehors). */
+  .vol input{flex:1 1 4rem; min-width:3.2rem; max-width:7rem; width:auto;
+    accent-color:var(--laiton-2); cursor:pointer;}
 
-  .melangeur{border-top:1px dashed var(--trait); padding-top:.6rem;
-    display:flex; flex-direction:column; gap:.4rem;}
-  .melangeur .titre-mel{font-size:.58rem; letter-spacing:.24em; text-transform:uppercase;
-    color:var(--craie-3);}
-  .melangeur .rang{display:flex; flex-wrap:wrap; gap:.32rem;}
-  .bouton.mini{padding:.3rem .55rem; font-size:.66rem; letter-spacing:.03em;
-    border-color:var(--trait); color:var(--craie-3);}
+  /* Le melangeur vit SOUS le volume principal et decale vers la droite :
+     le volume commande l'ensemble, chaque tranche commande sa piste. */
+  .melangeur{margin:.15rem 0 0 1.15rem; padding:.5rem 0 .1rem .9rem;
+    border-left:1px solid var(--laiton-2);
+    display:flex; flex-direction:column; gap:.3rem;}
+  .melangeur .chapeau{display:flex; align-items:center; gap:.6rem;}
+  .melangeur .titre-mel{font-size:.56rem; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--craie-3); white-space:nowrap;}
+  .melangeur .ligne{display:grid; grid-template-columns:4.3rem 1fr 1.9rem;
+    align-items:center; gap:.5rem;}
+  .melangeur .nomp{font-family:var(--mono); font-size:.66rem; color:var(--craie-2);
+    background:none; border:0; padding:0; text-align:right; cursor:pointer;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .melangeur .nomp:hover{color:var(--laiton);}
+  .melangeur .ligne input{width:100%; accent-color:var(--laiton); cursor:pointer;}
+  .melangeur .ligne.dormante input{accent-color:var(--laiton-2); opacity:.5;}
+  .melangeur .ligne.muette .nomp{color:var(--craie-3); text-decoration:line-through;}
+  /* un accent tres sombre fait INVERSER le contraste par le navigateur :
+     la piste coupee ressortait toute blanche. Un gris moyen, donc. */
+  .melangeur .ligne.muette input{accent-color:var(--craie-3); opacity:.6;}
+  .melangeur .niv{font-size:.6rem; color:var(--craie-3); text-align:right;
+    font-variant-numeric:tabular-nums;}
+  .bouton.mini{padding:.2rem .5rem; font-size:.61rem; letter-spacing:.03em;
+    border-color:var(--trait); color:var(--craie-3); margin-left:auto;}
   .bouton.mini:hover{border-color:var(--laiton-2); color:var(--craie-2);}
   .bouton.mini.actif{border-color:var(--laiton); background:rgba(201,164,92,.16); color:var(--laiton);}
-  .melangeur .note{font-size:.6rem; line-height:1.7; color:var(--craie-3); margin:.1rem 0 0;}
+  .melangeur .note{font-size:.6rem; line-height:1.7; color:var(--craie-3); margin:.35rem 0 0;}
 
   .etagere{border-top:1px solid var(--trait); padding-top:.7rem;}
   .etagere .entete{font-size:.6rem; letter-spacing:.26em; text-transform:uppercase; color:var(--craie-3); margin-bottom:.5rem;}
@@ -91,8 +111,6 @@
   <span class="par" id="par"></span>
 </div>
 
-<div class="melangeur" id="melangeur" style="display:none"></div>
-
 <input class="barre" id="position" type="range" min="0" max="1000" value="0" step="1" aria-label="position dans le morceau">
 <div class="temps"><span id="ecoule">0:00</span><span id="duree">—:—</span></div>
 
@@ -104,6 +122,8 @@
     <input id="volume" type="range" min="0" max="100" value="80" aria-label="volume">
   </label>
 </div>
+
+<div class="melangeur" id="melangeur" style="display:none"></div>
 
 <div class="etagere">
   <div class="entete">L'étagère</div>
@@ -226,15 +246,20 @@
     elJouer.textContent = audio.paused ? "▶ jouer" : "❚❚ pause";
   }
 
+  /* Le volume principal commande l'ensemble ; chaque tranche a son propre
+     niveau, qui le multiplie. Tant qu'on ecoute le melange, les tranches sont
+     dessinees mais en sommeil : un seul fichier joue. */
   function volumes() {
     audio.volume = melange ? vol : 0;
-    stems.forEach(function (s) { s.audio.volume = (!melange && s.on) ? vol : 0; });
+    stems.forEach(function (s) { s.audio.volume = melange ? 0 : vol * s.niveau; });
   }
   function majMelangeur() {
     stems.forEach(function (s) {
-      var a = !melange && s.on;
-      s.bouton.classList.toggle("actif", a);
-      s.bouton.setAttribute("aria-pressed", a ? "true" : "false");
+      var n = Math.round(s.niveau * 100);
+      if (+s.curseur.value !== n) s.curseur.value = n;
+      s.niv.textContent = n;
+      s.ligne.classList.toggle("muette", !melange && s.niveau === 0);
+      s.ligne.classList.toggle("dormante", melange);
     });
     if (elTout) {
       elTout.classList.toggle("actif", melange);
@@ -272,31 +297,37 @@
   }
   function auMelange() {
     melange = true;
-    stems.forEach(function (s) { s.on = true; s.audio.pause(); });
+    stems.forEach(function (s) {
+      s.niveau = 1; s.audio.pause(); s.audio.playbackRate = 1;
+    });
     volumes(); majMelangeur();
   }
-  function basculer(s) {
-    if (melange) {
-      melange = false;
-      stems.forEach(function (x) {
-        x.on = false;
-        x.audio.preload = "auto";
-        /* poser l'aiguille SEULEMENT quand le fichier sait ou il en est :
-           avant, tout appel a currentTime tombe dans le vide sans rien dire,
-           et la piste demarre a zero avec 200 ms de retard a rattraper. */
-        var poser = function () {
-          try { x.audio.currentTime = audio.currentTime; } catch (e) {}
-          if (!audio.paused) x.audio.play().catch(function () {});
-        };
-        if (x.audio.readyState >= 1) poser();
-        else x.audio.addEventListener("loadedmetadata", poser, { once: true });
-      });
-      s.on = true;
-    } else {
-      s.on = !s.on;
-      if (!stems.some(function (x) { return x.on; })) { auMelange(); return; }
-    }
-    volumes(); majMelangeur(); caler(true);
+  /* Toucher une tranche fait quitter le melange et lance les quatre pistes. */
+  function engager() {
+    if (!melange) return;
+    melange = false;
+    stems.forEach(function (x) {
+      x.audio.preload = "auto";
+      /* poser l'aiguille SEULEMENT quand le fichier sait ou il en est :
+         avant, tout appel a currentTime tombe dans le vide sans rien dire,
+         et la piste demarre a zero avec 200 ms de retard a rattraper. */
+      var poser = function () {
+        try { x.audio.currentTime = audio.currentTime; } catch (e) {}
+        if (!audio.paused) x.audio.play().catch(function () {});
+      };
+      if (x.audio.readyState >= 1) poser();
+      else x.audio.addEventListener("loadedmetadata", poser, { once: true });
+    });
+    caler(true);
+  }
+  function regler(s, v) {
+    s.niveau = Math.max(0, Math.min(1, v));
+    engager(); volumes(); majMelangeur();
+  }
+  /* Clic sur le nom : couper la piste, puis la remettre ou elle etait. */
+  function couper(s) {
+    if (s.niveau > 0) { s.avant = s.niveau; regler(s, 0); }
+    else regler(s, s.avant || 1);
   }
   var elMel = document.getElementById("melangeur"), elTout = null;
   function construireMelangeur(p) {
@@ -305,26 +336,38 @@
     elMel.innerHTML = "";
     if (!p.pistes || !p.pistes.length) { elMel.style.display = "none"; return; }
     elMel.style.display = "";
+    var chap = document.createElement("div"); chap.className = "chapeau";
     var t = document.createElement("span");
     t.className = "titre-mel"; t.textContent = "pistes s\u00e9par\u00e9es";
-    elMel.appendChild(t);
-    var rang = document.createElement("div"); rang.className = "rang";
+    chap.appendChild(t);
     var b0 = document.createElement("button");
     b0.className = "bouton mini actif"; b0.textContent = "le m\u00e9lange";
-    b0.title = "le morceau tel qu'il a \u00e9t\u00e9 compos\u00e9";
+    b0.title = "revenir au morceau tel qu'il a \u00e9t\u00e9 compos\u00e9";
     b0.addEventListener("click", auMelange);
-    elTout = b0; rang.appendChild(b0);
+    elTout = b0; chap.appendChild(b0);
+    elMel.appendChild(chap);
+
     p.pistes.forEach(function (d) {
       var a = new Audio();
       a.preload = "none"; a.src = d.fichier; a.volume = 0; a.loop = audio.loop;
-      var s = { nom: d.nom, audio: a, on: true };
+      var s = { nom: d.nom, audio: a, niveau: 1, avant: 1 };
+
+      var l = document.createElement("div"); l.className = "ligne dormante";
       var b = document.createElement("button");
-      b.className = "bouton mini"; b.textContent = d.nom;
-      b.title = "n'entendre que ce qui est allum\u00e9";
-      b.addEventListener("click", function () { basculer(s); });
-      s.bouton = b; stems.push(s); rang.appendChild(b);
+      b.className = "nomp"; b.textContent = d.nom;
+      b.title = "couper ou remettre cette piste";
+      b.addEventListener("click", function () { couper(s); });
+      var c = document.createElement("input");
+      c.type = "range"; c.min = 0; c.max = 100; c.value = 100; c.step = 1;
+      c.setAttribute("aria-label", "niveau de la piste " + d.nom);
+      c.addEventListener("input", function () { regler(s, c.value / 100); });
+      var n = document.createElement("span");
+      n.className = "niv"; n.textContent = "100";
+
+      l.appendChild(b); l.appendChild(c); l.appendChild(n);
+      s.ligne = l; s.curseur = c; s.niv = n;
+      stems.push(s); elMel.appendChild(l);
     });
-    elMel.appendChild(rang);
     if (p.motPistes) {
       var n = document.createElement("p");
       n.className = "note"; n.textContent = p.motPistes;
@@ -401,7 +444,8 @@
   /* exposé pour la vérification depuis la console */
   window._lecteur = { audio: audio, pistes: PISTES, charger: charger,
     stems: function () { return stems; }, melange: function () { return melange; },
-    basculer: function (n) { stems.forEach(function (s) { if (s.nom === n) basculer(s); }); },
+    regler: function (n, v) { stems.forEach(function (s) { if (s.nom === n) regler(s, v); }); },
+    couper: function (n) { stems.forEach(function (s) { if (s.nom === n) couper(s); }); },
     auMelange: auMelange };
 })();
 </script>
