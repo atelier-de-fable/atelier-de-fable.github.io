@@ -45,6 +45,7 @@
     border:1px solid var(--laiton-2); border-radius:3px; padding:.5rem .9rem;
     cursor:pointer; font-size:.8rem; letter-spacing:.08em; transition:border-color .15s, background .15s;}
   .bouton:hover{border-color:var(--laiton); background:rgba(201,164,92,.08);}
+  .bouton.actif{border-color:var(--laiton); background:rgba(201,164,92,.18); color:var(--laiton);}
   .bouton.jouer{min-width:5.6rem;}
   .vol{display:flex; align-items:center; gap:.45rem; margin-left:auto; min-width:0;}
   .vol span{font-size:.66rem; color:var(--craie-3); white-space:nowrap;}
@@ -85,6 +86,7 @@
 <div class="commandes">
   <button class="bouton jouer" id="jouer" aria-label="lecture ou pause">▶ jouer</button>
   <button class="bouton" id="suivant" aria-label="morceau suivant" title="morceau suivant">⏭</button>
+  <button class="bouton" id="boucle" aria-label="répéter le morceau" aria-pressed="false" title="répéter ce morceau sans fin">↺</button>
   <label class="vol"><span>volume</span>
     <input id="volume" type="range" min="0" max="100" value="80" aria-label="volume">
   </label>
@@ -135,7 +137,8 @@
       elDur = document.getElementById("duree"),
       elJouer = document.getElementById("jouer"),
       elVol = document.getElementById("volume"),
-      elEtagere = document.getElementById("etagere");
+      elEtagere = document.getElementById("etagere"),
+      elBoucle = document.getElementById("boucle");
 
   function mmss(s) {
     if (!isFinite(s)) return "—:—";
@@ -144,7 +147,7 @@
   }
   function sauver() {
     try {
-      localStorage.setItem(CLE, JSON.stringify({ i: i, t: audio.currentTime, v: audio.volume }));
+      localStorage.setItem(CLE, JSON.stringify({ i: i, t: audio.currentTime, v: audio.volume, b: audio.loop }));
     } catch (e) {}
   }
   function peindreEtagere() {
@@ -198,6 +201,7 @@
   audio.addEventListener("play", majBouton);
   audio.addEventListener("pause", majBouton);
   audio.addEventListener("ended", function () {
+    if (audio.loop) return;                       /* le navigateur reboucle seul */
     if (PISTES.length > 1) charger(i + 1, true); else majBouton();
   });
   audio.addEventListener("error", function () {
@@ -209,6 +213,15 @@
   });
   document.getElementById("suivant").addEventListener("click", function () {
     charger(i + 1, !audio.paused);
+  });
+  function majBoucle() {
+    elBoucle.classList.toggle("actif", audio.loop);
+    elBoucle.setAttribute("aria-pressed", audio.loop ? "true" : "false");
+    elBoucle.title = audio.loop ? "répétition activée — cliquez pour l'arrêter"
+                                : "répéter ce morceau sans fin";
+  }
+  elBoucle.addEventListener("click", function () {
+    audio.loop = !audio.loop; majBoucle(); sauver();
   });
   elPos.addEventListener("input", function () { glisse = true; });
   elPos.addEventListener("change", function () {
@@ -226,6 +239,8 @@
   try { etat = JSON.parse(localStorage.getItem(CLE) || "null"); } catch (e) {}
   audio.volume = etat && typeof etat.v === "number" ? etat.v : 0.8;
   elVol.value = Math.round(audio.volume * 100);
+  audio.loop = !!(etat && etat.b);
+  majBoucle();
   reprise = etat && typeof etat.t === "number" ? etat.t : 0;
   charger(etat && typeof etat.i === "number" ? etat.i : 0, false);
 
