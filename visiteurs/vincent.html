@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les Caves de Laiton — la salle de Vincent</title>
+<meta name="description" content="Une tranche verticale d'action-aventure vu de dessus, en quatre caves. Conçu par Vincent, construit par Fable. Tout est dessiné par le code.">
+<meta name="theme-color" content="#0a0c12">
+<meta property="og:title" content="Les Caves de Laiton">
+<meta property="og:description" content="Quatre caves, trois cœurs, une clef de laiton. Conçu par Vincent, construit par Fable.">
+<meta property="og:site_name" content="L'Atelier de Fable">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0c12'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='%23c9a45c'%3E%E2%9C%B3%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700&family=IBM+Plex+Mono:ital,wght@0,400;0,500&display=swap">
+<style>
+  :root{
+    --encre:#0a0c12; --trait:#232a3d;
+    --craie:#e9e4d6; --craie-2:#b9b4a6; --craie-3:#8a8678;
+    --laiton:#c9a45c;
+    --hote:#6fa8d4; --hote-2:#3f6b8f;
+    --serif-d:"Fraunces", Georgia, serif;
+    --mono:"IBM Plex Mono", Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--encre); color:var(--craie); font-family:var(--mono);
+    margin:0; -webkit-font-smoothing:antialiased; min-height:100vh;
+    display:flex; flex-direction:column; overflow-x:hidden;}
+  ::selection{background:var(--hote); color:var(--encre);}
+  a{color:var(--laiton); text-decoration:none;}
+  a:hover{text-decoration:underline; text-underline-offset:3px;}
+  a:focus-visible{outline:2px solid var(--hote); outline-offset:2px;}
+  .page{max-width:34rem; margin:0 auto; padding:0 1.5rem 3rem; width:100%;
+    flex:1; display:flex; flex-direction:column;}
+
+  nav.retour{padding:1.6rem 0 0; font-size:.75rem; letter-spacing:.12em;}
+  nav.retour a{color:var(--craie-3);}
+  nav.retour a:hover{color:var(--hote);}
+
+  .cartel{
+    border:1px solid var(--trait); border-left:2px solid var(--hote-2);
+    padding:1.5rem 1.6rem; background:rgba(111,168,212,.04); margin:2.4rem 0 2rem;
+  }
+  .cartel .locataire{
+    font-size:.64rem; letter-spacing:.3em; text-transform:uppercase;
+    color:var(--hote); display:block; margin-bottom:.9rem;
+  }
+  .cartel h1{
+    font-family:var(--serif-d); font-weight:400; font-size:1.7rem; line-height:1.15;
+    margin:0 0 1rem; letter-spacing:-.005em; color:var(--craie);
+  }
+  .cartel p{margin:0 0 .8em; font-size:.82rem; line-height:1.85; color:var(--craie-2);}
+  .cartel p:last-child{margin-bottom:0;}
+  .cartel .dates{
+    font-size:.66rem; color:var(--craie-3); letter-spacing:.04em;
+    border-top:1px solid var(--trait); padding-top:.8rem; margin-top:1.1rem;
+  }
+
+  /* la toile a le droit de déborder de la colonne de texte, jusqu'à 2x */
+  .ecran{margin:0 -1.5rem 1.4rem; text-align:center;}
+  canvas#cave{
+    display:block; margin:0 auto; width:100%; max-width:512px; height:auto;
+    image-rendering:pixelated; image-rendering:crisp-edges;
+    background:#0a0c12; border:1px solid var(--trait);
+    touch-action:manipulation;
+  }
+  canvas#cave:focus-visible{outline:2px solid var(--hote); outline-offset:3px;}
+
+  .commandes{
+    border:1px solid var(--trait); padding:1.1rem 1.2rem; margin:0 0 2rem;
+    font-size:.72rem; line-height:1.9; color:var(--craie-2);
+  }
+  .commandes h2{
+    font-size:.62rem; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--hote); margin:0 0 .8rem; font-weight:500; font-family:var(--mono);
+  }
+  .commandes dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:.15rem .9rem;}
+  .commandes dt{color:var(--craie); white-space:nowrap;}
+  .commandes dd{margin:0; color:var(--craie-3);}
+  kbd{
+    font-family:var(--mono); font-size:.68rem; border:1px solid var(--trait);
+    border-bottom-width:2px; border-radius:3px; padding:.05em .4em;
+    background:#12161f; color:var(--craie);
+  }
+  .commandes .note{margin:.9rem 0 0; color:var(--craie-3); font-size:.68rem; line-height:1.7;}
+
+  footer{border-top:1px solid var(--trait); padding:1.6rem 0 0;
+    font-size:.7rem; line-height:1.9; color:var(--craie-3); margin-top:auto;}
+  footer b{color:var(--craie-2); font-weight:500;}
+
+  @media (max-width:420px){
+    .page{padding:0 1rem 2.5rem;}
+    .ecran{margin:0 -1rem 1.4rem;}
+    .commandes dl{grid-template-columns:1fr; gap:.05rem;}
+    .commandes dd{margin-bottom:.5rem;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="retour"><a href="./">← l'aile des visiteurs</a></nav>
+
+  <div class="cartel">
+    <span class="locataire">Locataire · Vincent</span>
+    <h1>Les Caves de Laiton</h1>
+    <p>Quatre caves enchaînées sous un atelier. On descend avec trois cœurs et une lame
+    courte, on apprend à frapper dans la direction où l'on regarde, on trouve la clef de
+    laiton dans le Réduit, on ouvre la porte de la Citerne, on abat le Gardien du Fanal.
+    Petit, mais complet&nbsp;: on peut gagner, on peut mourir, on relance d'une touche.</p>
+    <p>Tout ce que vous voyez est tracé par le code sur une toile de 256 × 192&nbsp;: aucune
+    image, aucun son, aucune requête. La logique du jeu est une fonction pure, et le hasard
+    tient dans une graine rangée dans l'état — deux parties jouées pareil se déroulent pareil.</p>
+    <p class="dates">Conçu et commandité par <b>Vincent</b>, hôte de ce site.
+    Construit par <b>Fable</b> (IA, Claude d'Anthropic). Univers, noms et graphismes originaux.
+    Ouverte le 1<sup>er</sup> septembre 2026. <b>Un clavier est nécessaire</b> — ni souris, ni tactile.</p>
+  </div>
+
+  <div class="ecran">
+    <canvas id="cave" width="256" height="192" tabindex="0"
+      aria-label="Les Caves de Laiton, jeu d'action-aventure au clavier"></canvas>
+  </div>
+
+  <section class="commandes">
+    <h2>Commandes</h2>
+    <dl>
+      <dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> ou <kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd></dt>
+      <dd>se déplacer dans les quatre directions</dd>
+      <dt><kbd>Espace</kbd></dt>
+      <dd>coup de lame, dans la direction regardée</dd>
+      <dt><kbd>Entrée</kbd></dt>
+      <dd>démarrer, mettre en pause, relancer</dd>
+    </dl>
+    <p class="note">Les touches sont lues par position physique&nbsp;: Z Q S D sur un clavier
+    AZERTY, W A S D sur un QWERTY — les deux marchent sans réglage. Cliquez la toile si le
+    clavier ne répond pas. La fenêtre qui perd le focus met le jeu en pause.</p>
+  </section>
+
+  <footer>
+    <b>Les Caves de Laiton</b> · <a href="./">l'aile des visiteurs</a> ·
+    <a href="../">l'Atelier de Fable</a><br>
+    Conçue par son locataire, construite par Fable (IA, Claude d'Anthropic), hébergée par Vincent.
+  </footer>
+
+</div>
+
+<script id="jeu-logique">
+(function (window) {
+'use strict';
+
+/* ---------- constantes ---------- */
+var TUILE = 16, COLS = 16, RANGS = 11;
+var LARGEUR = 256, HAUTEUR = 176, HUD_H = 16;
+var PAS_DT = 1 / 60, DT_MAX = 1 / 30;
+var VITESSE_HEROS = 60, VIE_MAX = 6;
+var ATK_DUREE = 0.25, ATK_RECHARGE = 0.15, ATK_PORTEE = 16;
+var INVUL_HEROS = 1.0, INVUL_ENNEMI = 0.4;
+var GRAINE = 20260901;
+var H_BOITE = 12, E_BOITE = 12, O_BOITE = 8;
+var RECUL_HEROS = 10, RECUL_ENNEMI = 12;
+var DIAG = 0.7071067811865476, EPS = 1e-9;
+var DEGATS = { rodeur: 1, chargeur: 1, gardien: 2 };
+var PV = { rodeur: 1, chargeur: 2, gardien: 3 };
+var TUILES = { SOL: 0, MUR: 1, EAU: 2, PORTE: 3, SORTIE: 4 };
+var SALLES = ['Le Seuil', 'La Citerne', 'Le Réduit', 'La Chambre du Fanal'];
+var V_RODEUR = 28, V_CHARGEUR = 90, V_GARDIEN = 34, V_GARDIEN_CHARGE = 120;
+var DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+/* ---------- plans des quatre caves ---------- */
+var PLANS = [
+  ['################',
+   '#..............#',
+   '#..##......##..#',
+   '#..##......##..#',
+   '#..............#',
+   '#..............S',
+   '#..............#',
+   '#..##......##..#',
+   '#..##......##..#',
+   '#..............#',
+   '################'],
+  ['#######SS#######',
+   '#..............#',
+   '#..~~~....~~~..#',
+   '#..~~~....~~~..#',
+   '#..............#',
+   'S..............P',
+   '#..............#',
+   '#....######....#',
+   '#..............#',
+   '#..............#',
+   '################'],
+  ['################',
+   '#..............#',
+   '#..............#',
+   '#...##....##...#',
+   '#...##....##...#',
+   '#..............#',
+   '#..............#',
+   '#...##....##...#',
+   '#..............#',
+   '#..............#',
+   '#######SS#######'],
+  ['################',
+   '#..............#',
+   '#..~~......~~..#',
+   '#..~~......~~..#',
+   '#......##......#',
+   'S......##......#',
+   '#..............#',
+   '#..~~......~~..#',
+   '#..~~......~~..#',
+   '#..............#',
+   '################']
+];
+
+function codeDalle(ch) {
+  if (ch === '#') return TUILES.MUR;
+  if (ch === '~') return TUILES.EAU;
+  if (ch === 'P') return TUILES.PORTE;
+  if (ch === 'S') return TUILES.SORTIE;
+  return TUILES.SOL;
+}
+var GRILLES = (function () {
+  var g = [], s, r, c, ligne, rang;
+  for (s = 0; s < PLANS.length; s++) {
+    ligne = [];
+    for (r = 0; r < RANGS; r++) {
+      rang = [];
+      for (c = 0; c < COLS; c++) rang.push(codeDalle(PLANS[s][r].charAt(c)));
+      ligne.push(rang);
+    }
+    g.push(ligne);
+  }
+  return g;
+})();
+
+/* sorties : dalle de bord -> salle voisine. bord = celui que l'on franchit. */
+var SORTIES = [
+  [{ c: 15, r: 5, vers: 1, bord: 'E' }],
+  [{ c: 0, r: 5, vers: 0, bord: 'O' },
+   { c: 7, r: 0, vers: 2, bord: 'N' },
+   { c: 8, r: 0, vers: 2, bord: 'N' },
+   { c: 15, r: 5, vers: 3, bord: 'E' }],
+  [{ c: 7, r: 10, vers: 1, bord: 'S' },
+   { c: 8, r: 10, vers: 1, bord: 'S' }],
+  [{ c: 0, r: 5, vers: 1, bord: 'O' }]
+];
+
+var MODELE_ENNEMIS = [
+  { id: 'rodeur-1', type: 'rodeur', salle: 1, c: 2, r: 1, dir: 1 },
+  { id: 'rodeur-2', type: 'rodeur', salle: 1, c: 13, r: 9, dir: 3 },
+  { id: 'chargeur-1', type: 'chargeur', salle: 2, c: 13, r: 5, dir: 3 },
+  { id: 'gardien', type: 'gardien', salle: 3, c: 12, r: 5, dir: 3 }
+];
+var MODELE_OBJETS = [
+  { id: 'coeur-1', type: 'coeur', salle: 0, c: 7, r: 1 },
+  { id: 'clef', type: 'clef', salle: 2, c: 7, r: 1 },
+  { id: 'coeur-2', type: 'coeur', salle: 2, c: 13, r: 8 }
+];
+
+/* ---------- hasard : xorshift32, la graine vit dans l'état ---------- */
+function xorshift(g) {
+  var x = g | 0;
+  if (x === 0) x = 0x1b873593;
+  x ^= x << 13; x |= 0;
+  x ^= x >>> 17;
+  x ^= x << 5; x |= 0;
+  return x | 0;
+}
+/* rend { g:nouvelleGraine, v:flottant dans [0,1) } */
+function tirage(g) {
+  var n = xorshift(g);
+  return { g: n, v: (n >>> 0) / 4294967296 };
+}
+
+/* ---------- copies : pas() ne mute jamais son entrée ---------- */
+function copierH(h) {
+  return { x: h.x, y: h.y, dir: h.dir, vie: h.vie, vieMax: h.vieMax,
+    invul: h.invul, atk: h.atk, atkDir: h.atkDir, recharge: h.recharge };
+}
+function copierE(e) {
+  return { id: e.id, type: e.type, salle: e.salle, x: e.x, y: e.y,
+    pv: e.pv, pvMax: e.pvMax, dir: e.dir, mode: e.mode, minu: e.minu, inv: e.inv };
+}
+function copierO(o) {
+  return { id: o.id, type: o.type, salle: o.salle, x: o.x, y: o.y };
+}
+function copier(e) {
+  var i, en = [], ob = [], tu = [];
+  for (i = 0; i < e.ennemis.length; i++) en.push(copierE(e.ennemis[i]));
+  for (i = 0; i < e.objets.length; i++) ob.push(copierO(e.objets[i]));
+  for (i = 0; i < e.tues.length; i++) tu.push(e.tues[i]);
+  return { v: e.v, graine: e.graine, phase: e.phase, salle: e.salle, t: e.t, ent: e.ent,
+    h: copierH(e.h), clef: e.clef, ennemis: en, objets: ob, tues: tu, fanal: e.fanal };
+}
+
+/* ---------- état neuf ---------- */
+function nouvelEtat(graine) {
+  var g = (graine | 0) || GRAINE;
+  var en = [], ob = [], i, m;
+  for (i = 0; i < MODELE_ENNEMIS.length; i++) {
+    m = MODELE_ENNEMIS[i];
+    en.push({ id: m.id, type: m.type, salle: m.salle,
+      x: m.c * TUILE + 2, y: m.r * TUILE + 2,
+      pv: PV[m.type], pvMax: PV[m.type], dir: m.dir,
+      mode: m.type === 'chargeur' ? 'repos' : 'marche',
+      minu: m.type === 'gardien' ? 2 : 1.5, inv: 0 });
+  }
+  for (i = 0; i < MODELE_OBJETS.length; i++) {
+    m = MODELE_OBJETS[i];
+    ob.push({ id: m.id, type: m.type, salle: m.salle,
+      x: m.c * TUILE + 4, y: m.r * TUILE + 4 });
+  }
+  return {
+    v: 1, graine: g, phase: 'titre', salle: 0, t: 0, ent: false,
+    h: { x: 2 * TUILE + 2, y: 5 * TUILE + 2, dir: 1, vie: VIE_MAX, vieMax: VIE_MAX,
+         invul: 0, atk: 0, atkDir: 1, recharge: 0 },
+    clef: false, ennemis: en, objets: ob, tues: [], fanal: false
+  };
+}
+
+/* ---------- géométrie ---------- */
+function dalle(salle, c, r) {
+  if (c < 0 || c >= COLS || r < 0 || r >= RANGS) return TUILES.MUR;
+  return GRILLES[salle][r][c];
+}
+function pleine(salle, c, r, clef) {
+  var t = dalle(salle, c, r);
+  return t === TUILES.MUR || t === TUILES.EAU || (t === TUILES.PORTE && !clef);
+}
+function boiteLibre(salle, clef, x, y, w, h) {
+  /* borne haute : ceil(bord)-1, et non floor(bord-1) — le « -1 » etait une
+     convention de pixels ENTIERS appliquee a des coordonnees flottantes, et
+     amputait le test d une unite sur les seules faces EST et SUD (mesure :
+     0,9 u de penetration a l est et au sud, 0,0 a l ouest et au nord). */
+  var c0 = Math.floor(x / TUILE), c1 = Math.ceil((x + w) / TUILE) - 1;
+  var r0 = Math.floor(y / TUILE), r1 = Math.ceil((y + h) / TUILE) - 1;
+  var c, r;
+  for (r = r0; r <= r1; r++) {
+    for (c = c0; c <= c1; c++) {
+      if (pleine(salle, c, r, clef)) return false;
+    }
+  }
+  return true;
+}
+function borner(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+/* déplacement axe par axe : on glisse le long des murs */
+function deplacer(corps, salle, clef, dx, dy, w, h) {
+  var nx, ny, bouge = { x: false, y: false };
+  if (dx !== 0) {
+    nx = borner(corps.x + dx, 0, LARGEUR - w);
+    if (boiteLibre(salle, clef, nx, corps.y, w, h)) {
+      if (nx !== corps.x) bouge.x = true;
+      corps.x = nx;
+    }
+  }
+  if (dy !== 0) {
+    ny = borner(corps.y + dy, 0, HAUTEUR - h);
+    if (boiteLibre(salle, clef, corps.x, ny, w, h)) {
+      if (ny !== corps.y) bouge.y = true;
+      corps.y = ny;
+    }
+  }
+  return bouge;
+}
+
+/* poussée pas à pas : on ne finit jamais dans un mur */
+function pousser(corps, salle, clef, dx, dy, dist, w, h) {
+  var n = Math.max(1, Math.round(dist)), i, nx, ny;
+  for (i = 0; i < n; i++) {
+    nx = borner(corps.x + dx, 0, LARGEUR - w);
+    ny = borner(corps.y + dy, 0, HAUTEUR - h);
+    if (!boiteLibre(salle, clef, nx, ny, w, h)) return;
+    corps.x = nx; corps.y = ny;
+  }
+}
+
+function chevauche(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah;
+}
+
+/* ---------- le pas ---------- */
+function pas(etat, touches, dt) {
+  var e = copier(etat);
+  var k = touches || {};
+  var entree = !!k.entree, frontEntree = entree && !e.ent;
+
+  if (!(dt > 0)) dt = 0;
+  if (dt > DT_MAX) dt = DT_MAX;
+
+  if (e.phase === 'titre') {
+    if (frontEntree) e.phase = 'jeu';
+    e.ent = entree;
+    return e;
+  }
+  if (e.phase === 'victoire' || e.phase === 'defaite') {
+    /* reporter la touche encore enfoncee dans l etat neuf, sinon le front se
+       redeclenche au pas suivant et l ecran-titre est escamote. */
+    if (frontEntree) { var neuf = nouvelEtat(GRAINE); neuf.ent = true; return neuf; }
+    e.ent = entree;
+    return e;
+  }
+  if (e.phase === 'pause') {
+    if (frontEntree) e.phase = 'jeu';
+    e.ent = entree;
+    return e;
+  }
+  if (frontEntree) { e.phase = 'pause'; e.ent = entree; return e; }
+  e.ent = entree;
+
+  e.t += dt;
+  majHeros(e, k, dt);
+  majAttaque(e, k, dt);
+  majEnnemis(e, dt);
+  majContacts(e, dt);
+  majObjets(e);
+  majTransition(e);
+  majFin(e);
+  return e;
+}
+
+function majHeros(e, k, dt) {
+  var h = e.h;
+  var dx = (k.droite ? 1 : 0) - (k.gauche ? 1 : 0);
+  var dy = (k.bas ? 1 : 0) - (k.haut ? 1 : 0);
+  var f = (dx !== 0 && dy !== 0) ? DIAG : 1;
+  if (dx !== 0) h.dir = dx > 0 ? 1 : 3;
+  else if (dy !== 0) h.dir = dy > 0 ? 2 : 0;
+  if (h.invul > 0) { h.invul -= dt; if (h.invul <= EPS) h.invul = 0; }
+  deplacer(h, e.salle, e.clef, dx * VITESSE_HEROS * f * dt, dy * VITESSE_HEROS * f * dt,
+    H_BOITE, H_BOITE);
+}
+
+/* boîte de coup : 16 x 12, issue de la boîte du héros, dans atkDir figée */
+function boiteCoup(h) {
+  var d = DIRS[h.atkDir];
+  if (d[0] !== 0) {
+    return { x: d[0] > 0 ? h.x + H_BOITE : h.x - ATK_PORTEE, y: h.y,
+      w: ATK_PORTEE, h: H_BOITE, dx: d[0], dy: 0 };
+  }
+  return { x: h.x, y: d[1] > 0 ? h.y + H_BOITE : h.y - ATK_PORTEE,
+    w: H_BOITE, h: ATK_PORTEE, dx: 0, dy: d[1] };
+}
+
+function majAttaque(e, k, dt) {
+  var h = e.h, i, en, b;
+  if (h.recharge > 0) { h.recharge -= dt; if (h.recharge <= EPS) h.recharge = 0; }
+  if (h.atk > 0) {
+    h.atk -= dt;
+    if (h.atk <= EPS) { h.atk = 0; h.recharge = ATK_RECHARGE; }
+  } else if (k.attaque && h.recharge === 0) {
+    h.atk = ATK_DUREE; h.atkDir = h.dir;
+  }
+  if (h.atk <= 0) return;
+  b = boiteCoup(h);
+  for (i = 0; i < e.ennemis.length; i++) {
+    en = e.ennemis[i];
+    if (en.salle !== e.salle || en.inv > 0) continue;
+    if (!chevauche(b.x, b.y, b.w, b.h, en.x, en.y, E_BOITE, E_BOITE)) continue;
+    en.pv -= 1;
+    en.inv = INVUL_ENNEMI;
+    pousser(en, en.salle, e.clef, b.dx, b.dy, RECUL_ENNEMI, E_BOITE, E_BOITE);
+  }
+  for (i = e.ennemis.length - 1; i >= 0; i--) {
+    if (e.ennemis[i].pv <= 0) {
+      e.tues.push(e.ennemis[i].id);
+      e.ennemis.splice(i, 1);
+    }
+  }
+}
+
+function majEnnemis(e, dt) {
+  var i, en;
+  for (i = 0; i < e.ennemis.length; i++) {
+    en = e.ennemis[i];
+    if (en.inv > 0) { en.inv -= dt; if (en.inv <= EPS) en.inv = 0; }
+    if (en.type === 'rodeur') majRodeur(e, en, dt);
+    else if (en.type === 'chargeur') majChargeur(e, en, dt);
+    else if (en.type === 'gardien') majGardien(e, en, dt);
+  }
+}
+
+function virer(e, en) {
+  var r = tirage(e.graine);
+  e.graine = r.g;
+  en.dir = Math.floor(r.v * 4) % 4;
+  en.minu = 1.2 + r.v * 0.6;
+}
+
+function majRodeur(e, en, dt) {
+  var d, bouge;
+  en.minu -= dt;
+  if (en.minu <= 0) virer(e, en);
+  d = DIRS[en.dir];
+  bouge = deplacer(en, en.salle, e.clef,
+    d[0] * V_RODEUR * dt, d[1] * V_RODEUR * dt, E_BOITE, E_BOITE);
+  if (dt > 0 && !bouge.x && !bouge.y) virer(e, en);
+}
+
+/* y a-t-il une dalle pleine entre deux points ? (échantillonnage tous les 4 u) */
+function murEntre(salle, clef, ax, ay, bx, by) {
+  var dx = bx - ax, dy = by - ay;
+  var n = Math.max(1, Math.ceil(Math.sqrt(dx * dx + dy * dy) / 4));
+  var i, px, py;
+  for (i = 1; i < n; i++) {
+    px = ax + dx * (i / n);
+    py = ay + dy * (i / n);
+    if (pleine(salle, Math.floor(px / TUILE), Math.floor(py / TUILE), clef)) return true;
+  }
+  return false;
+}
+
+/* CHARGEUR : immobile, puis fonce en ligne droite quand on s'aligne devant lui */
+function majChargeur(e, en, dt) {
+  var h = e.h, hcx, hcy, ecx, ecy, d, bouge;
+  if (en.salle !== e.salle) return;
+  ecx = en.x + E_BOITE / 2; ecy = en.y + E_BOITE / 2;
+  hcx = h.x + H_BOITE / 2; hcy = h.y + H_BOITE / 2;
+  if (en.mode === 'repos') {
+    if (Math.abs(hcy - ecy) <= 8 && Math.abs(hcx - ecx) < 96 &&
+        !murEntre(en.salle, e.clef, ecx, ecy, hcx, ecy)) {
+      en.dir = hcx > ecx ? 1 : 3; en.mode = 'charge'; en.minu = 1.0;
+    } else if (Math.abs(hcx - ecx) <= 8 && Math.abs(hcy - ecy) < 96 &&
+        !murEntre(en.salle, e.clef, ecx, ecy, ecx, hcy)) {
+      en.dir = hcy > ecy ? 2 : 0; en.mode = 'charge'; en.minu = 1.0;
+    }
+    return;
+  }
+  if (en.mode === 'charge') {
+    en.minu -= dt;
+    d = DIRS[en.dir];
+    bouge = deplacer(en, en.salle, e.clef,
+      d[0] * V_CHARGEUR * dt, d[1] * V_CHARGEUR * dt, E_BOITE, E_BOITE);
+    if (en.minu <= 0 || (dt > 0 && !bouge.x && !bouge.y)) { en.mode = 'souffle'; en.minu = 0.8; }
+    return;
+  }
+  en.minu -= dt;
+  if (en.minu <= 0) { en.mode = 'repos'; en.minu = 0; }
+}
+
+/* GARDIEN : marche vers vous, se fige (télégraphe), puis charge */
+function majGardien(e, en, dt) {
+  var h = e.h, dx, dy, sx, sy, f, d, bouge;
+  if (en.salle !== e.salle) return;
+  en.minu -= dt;
+  if (en.mode === 'marche') {
+    dx = (h.x + H_BOITE / 2) - (en.x + E_BOITE / 2);
+    dy = (h.y + H_BOITE / 2) - (en.y + E_BOITE / 2);
+    sx = dx > 1 ? 1 : (dx < -1 ? -1 : 0);
+    sy = dy > 1 ? 1 : (dy < -1 ? -1 : 0);
+    f = (sx !== 0 && sy !== 0) ? DIAG : 1;
+    deplacer(en, en.salle, e.clef,
+      sx * V_GARDIEN * f * dt, sy * V_GARDIEN * f * dt, E_BOITE, E_BOITE);
+    if (Math.abs(dx) >= Math.abs(dy)) en.dir = dx > 0 ? 1 : 3;
+    else en.dir = dy > 0 ? 2 : 0;
+    if (en.minu <= 0) { en.mode = 'telegraphe'; en.minu = 0.5; }
+    return;
+  }
+  if (en.mode === 'telegraphe') {
+    if (en.minu <= 0) { en.mode = 'charge'; en.minu = 0.7; }
+    return;
+  }
+  d = DIRS[en.dir];
+  bouge = deplacer(en, en.salle, e.clef,
+    d[0] * V_GARDIEN_CHARGE * dt, d[1] * V_GARDIEN_CHARGE * dt, E_BOITE, E_BOITE);
+  if (en.minu <= 0 || (dt > 0 && !bouge.x && !bouge.y)) { en.mode = 'marche'; en.minu = 2.0; }
+}
+
+function majContacts(e, dt) {
+  var h = e.h, i, en, dx, dy, n;
+  if (h.invul > 0) return;
+  for (i = 0; i < e.ennemis.length; i++) {
+    en = e.ennemis[i];
+    if (en.salle !== e.salle) continue;
+    if (!chevauche(h.x, h.y, H_BOITE, H_BOITE, en.x, en.y, E_BOITE, E_BOITE)) continue;
+    h.vie -= DEGATS[en.type];
+    if (h.vie < 0) h.vie = 0;
+    h.invul = INVUL_HEROS;
+    dx = (h.x + H_BOITE / 2) - (en.x + E_BOITE / 2);
+    dy = (h.y + H_BOITE / 2) - (en.y + E_BOITE / 2);
+    n = Math.sqrt(dx * dx + dy * dy);
+    if (n < EPS) { dx = 1; dy = 0; } else { dx /= n; dy /= n; }
+    pousser(h, e.salle, e.clef, dx, dy, RECUL_HEROS, H_BOITE, H_BOITE);
+    return;
+  }
+}
+
+function majObjets(e) {
+  var h = e.h, i, o;
+  for (i = e.objets.length - 1; i >= 0; i--) {
+    o = e.objets[i];
+    if (o.salle !== e.salle) continue;
+    if (!chevauche(h.x, h.y, H_BOITE, H_BOITE, o.x, o.y, O_BOITE, O_BOITE)) continue;
+    if (o.type === 'clef') {
+      e.clef = true;
+      e.objets.splice(i, 1);
+    } else if (o.type === 'coeur') {
+      if (h.vie < VIE_MAX) {
+        h.vie = Math.min(h.vie + 2, VIE_MAX);
+        e.objets.splice(i, 1);
+      }
+    }
+  }
+}
+
+/* si l'arrivée tombe dans un mur, on cherche la dalle libre la plus proche */
+function degager(e, h) {
+  var rayon, dx, dy, nx, ny;
+  if (boiteLibre(e.salle, e.clef, h.x, h.y, H_BOITE, H_BOITE)) return;
+  for (rayon = 1; rayon <= 8; rayon++) {
+    for (dy = -rayon; dy <= rayon; dy++) {
+      for (dx = -rayon; dx <= rayon; dx++) {
+        nx = borner(h.x + dx * (TUILE / 2), 0, LARGEUR - H_BOITE);
+        ny = borner(h.y + dy * (TUILE / 2), 0, HAUTEUR - H_BOITE);
+        if (boiteLibre(e.salle, e.clef, nx, ny, H_BOITE, H_BOITE)) {
+          h.x = nx; h.y = ny; return;
+        }
+      }
+    }
+  }
+}
+
+function majTransition(e) {
+  var h = e.h, liste = SORTIES[e.salle], i, s;
+  var cc = Math.floor((h.x + H_BOITE / 2) / TUILE);
+  var rr = Math.floor((h.y + H_BOITE / 2) / TUILE);
+  for (i = 0; i < liste.length; i++) {
+    s = liste[i];
+    if (s.c !== cc || s.r !== rr) continue;
+    if (dalle(e.salle, s.c, s.r) === TUILES.PORTE && !e.clef) continue;
+    e.salle = s.vers;
+    if (s.bord === 'E') h.x = TUILE + 2;
+    else if (s.bord === 'O') h.x = LARGEUR - TUILE - H_BOITE - 2;
+    else if (s.bord === 'N') h.y = HAUTEUR - TUILE - H_BOITE - 2;
+    else h.y = TUILE + 2;
+    h.x = borner(h.x, 0, LARGEUR - H_BOITE);
+    h.y = borner(h.y, 0, HAUTEUR - H_BOITE);
+    degager(e, h);
+    return;
+  }
+}
+
+function majFin(e) {
+  if (e.h.vie <= 0) {
+    e.h.vie = 0;
+    e.phase = 'defaite';
+    return;
+  }
+  if (e.clef === true && e.salle === 3 && e.tues.indexOf('gardien') >= 0) {
+    e.fanal = true;
+    e.phase = 'victoire';
+  }
+}
+
+/* ---------- dessin : ne lit que ctx et etat ---------- */
+var C = {
+  vide: '#0a0c12',
+  sol1: '#3b3554', sol2: '#443e60', solPt: '#524a72',
+  murH: '#8d7a55', murB: '#5d4f33', murO: '#2b2440',
+  eau1: '#1b3a72', eau2: '#2a56a4',
+  porte: '#c9a45c', porteO: '#8a6b32',
+  sortie: '#6b64a0', sortieC: '#a9a2e0',
+  heros: '#4fc9a4', herosO: '#0f2a24', peau: '#f2cfa4', lame: '#eef2f6',
+  rodeur: '#d8563f', rodeurO: '#3a1410',
+  chargeur: '#c05fd0', chargeurO: '#3a1240',
+  gardien: '#e8a52a', gardienO: '#40260a',
+  oeil: '#f6f2e6',
+  coeur: '#e8415e', coeurO: '#4a1020',
+  clef: '#f2ce6a',
+  hud: '#12161f', hudT: '#8a8678', hudC: '#e9e4d6',
+  fanal: '#ffe28a', flash: '#f6f2e6'
+};
+
+function rect(ctx, x, y, w, h, couleur) {
+  ctx.fillStyle = couleur;
+  ctx.fillRect(x, y, w, h);
+}
+function texte(ctx, s, x, y, couleur, align, taille) {
+  ctx.fillStyle = couleur;
+  ctx.font = (taille || 8) + 'px "IBM Plex Mono", monospace';
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(s, x, y);
+}
+
+function dessinerDalles(ctx, etat) {
+  var s = etat.salle, c, r, t, x, y;
+  for (r = 0; r < RANGS; r++) {
+    for (c = 0; c < COLS; c++) {
+      t = GRILLES[s][r][c];
+      x = c * TUILE; y = r * TUILE + HUD_H;
+      if (t === TUILES.MUR) {
+        rect(ctx, x, y, TUILE, TUILE, C.murB);
+        rect(ctx, x, y, TUILE, 6, C.murH);
+        rect(ctx, x, y + TUILE - 2, TUILE, 2, C.murO);
+        rect(ctx, x + 7, y + 8, 2, 6, C.murO);
+      } else if (t === TUILES.EAU) {
+        rect(ctx, x, y, TUILE, TUILE, C.eau1);
+        rect(ctx, x + 2, y + 4, 6, 2, C.eau2);
+        rect(ctx, x + 9, y + 10, 5, 2, C.eau2);
+      } else if (t === TUILES.PORTE) {
+        if (etat.clef) {
+          rect(ctx, x, y, TUILE, TUILE, C.sol1);
+          rect(ctx, x, y, 3, TUILE, C.porteO);
+          rect(ctx, x + TUILE - 3, y, 3, TUILE, C.porteO);
+        } else {
+          rect(ctx, x, y, TUILE, TUILE, C.porteO);
+          rect(ctx, x + 2, y + 1, TUILE - 4, TUILE - 2, C.porte);
+          rect(ctx, x + 7, y + 6, 2, 4, C.porteO);
+        }
+      } else if (t === TUILES.SORTIE) {
+        rect(ctx, x, y, TUILE, TUILE, C.sortie);
+        rect(ctx, x + 3, y + 3, TUILE - 6, TUILE - 6, C.vide);
+        rect(ctx, x + 6, y + 6, 4, 4, C.sortieC);
+      } else {
+        rect(ctx, x, y, TUILE, TUILE, ((c + r) % 2 === 0) ? C.sol1 : C.sol2);
+        if ((c * 5 + r * 3) % 7 === 0) rect(ctx, x + 5, y + 6, 2, 2, C.solPt);
+      }
+    }
+  }
+}
+
+function dessinerHeros(ctx, etat) {
+  var h = etat.h, x = h.x, y = h.y + HUD_H, d;
+  if (h.invul > 0 && Math.floor(h.invul * 20) % 2 === 0) return;
+  rect(ctx, x, y, H_BOITE, H_BOITE, C.herosO);
+  rect(ctx, x + 1, y + 1, H_BOITE - 2, H_BOITE - 2, C.heros);
+  rect(ctx, x + 2, y + 2, H_BOITE - 4, 4, C.peau);
+  if (h.dir === 0) { rect(ctx, x + 3, y + 2, 2, 2, C.herosO); rect(ctx, x + 7, y + 2, 2, 2, C.herosO); }
+  else if (h.dir === 2) { rect(ctx, x + 3, y + 4, 2, 2, C.herosO); rect(ctx, x + 7, y + 4, 2, 2, C.herosO); }
+  else if (h.dir === 1) { rect(ctx, x + 7, y + 3, 2, 2, C.herosO); }
+  else { rect(ctx, x + 3, y + 3, 2, 2, C.herosO); }
+  if (h.atk > 0) {
+    d = DIRS[h.atkDir];
+    if (d[0] !== 0) {
+      rect(ctx, d[0] > 0 ? x + H_BOITE : x - ATK_PORTEE, y + 3, ATK_PORTEE, 5, C.lame);
+      rect(ctx, d[0] > 0 ? x + H_BOITE : x - ATK_PORTEE, y + 4, ATK_PORTEE, 2, C.flash);
+    } else {
+      rect(ctx, x + 3, d[1] > 0 ? y + H_BOITE : y - ATK_PORTEE, 5, ATK_PORTEE, C.lame);
+      rect(ctx, x + 4, d[1] > 0 ? y + H_BOITE : y - ATK_PORTEE, 2, ATK_PORTEE, C.flash);
+    }
+  }
+}
+
+function dessinerHud(ctx, etat) {
+  var i, x, plein, demi;
+  rect(ctx, 0, 0, LARGEUR, HUD_H, C.hud);
+  rect(ctx, 0, HUD_H - 1, LARGEUR, 1, C.murO);
+  for (i = 0; i < etat.h.vieMax / 2; i++) {
+    x = 4 + i * 10;
+    plein = etat.h.vie >= (i + 1) * 2;
+    demi = !plein && etat.h.vie === i * 2 + 1;
+    rect(ctx, x, 5, 7, 6, C.coeurO);
+    if (plein) { rect(ctx, x + 1, 4, 5, 6, C.coeur); rect(ctx, x + 3, 3, 1, 1, C.coeur); }
+    else if (demi) { rect(ctx, x + 1, 4, 2, 6, C.coeur); }
+  }
+  if (etat.clef) {
+    rect(ctx, 38, 4, 5, 3, C.clef);
+    rect(ctx, 42, 6, 5, 2, C.clef);
+    rect(ctx, 45, 8, 2, 2, C.clef);
+  }
+  texte(ctx, SALLES[etat.salle], LARGEUR - 4, 11, C.hudT, 'right', 8);
+}
+
+function voile(ctx, alpha) {
+  ctx.globalAlpha = alpha;
+  rect(ctx, 0, 0, LARGEUR, HAUTEUR + HUD_H, C.vide);
+  ctx.globalAlpha = 1;
+}
+
+function dessiner(ctx, etat) {
+  rect(ctx, 0, 0, LARGEUR, HAUTEUR + HUD_H, C.vide);
+  dessinerDalles(ctx, etat);
+  dessinerObjets(ctx, etat);
+  dessinerEnnemis(ctx, etat);
+  if (etat.phase !== 'titre') dessinerHeros(ctx, etat);
+  dessinerHud(ctx, etat);
+  var cx = LARGEUR / 2, cy = (HAUTEUR + HUD_H) / 2;
+  if (etat.phase === 'titre') {
+    voile(ctx, 0.78);
+    texte(ctx, 'LES CAVES DE LAITON', cx, cy - 14, C.porte, 'center', 14);
+    texte(ctx, 'trois coeurs, une lame courte', cx, cy + 4, C.hudT, 'center', 8);
+    texte(ctx, 'ENTREE pour descendre', cx, cy + 24, C.hudC, 'center', 10);
+  } else if (etat.phase === 'pause') {
+    voile(ctx, 0.7);
+    texte(ctx, 'PAUSE', cx, cy, C.hudC, 'center', 14);
+    texte(ctx, 'ENTREE pour reprendre', cx, cy + 18, C.hudT, 'center', 8);
+  } else if (etat.phase === 'defaite') {
+    voile(ctx, 0.75);
+    texte(ctx, 'LA CAVE VOUS GARDE', cx, cy - 6, C.rodeur, 'center', 12);
+    texte(ctx, 'ENTREE pour recommencer', cx, cy + 16, C.hudC, 'center', 9);
+  } else if (etat.phase === 'victoire') {
+    voile(ctx, 0.72);
+    texte(ctx, 'LE FANAL EST ALLUME', cx, cy - 16, C.fanal, 'center', 12);
+    texte(ctx, Math.round(etat.t / PAS_DT) + ' pas', cx, cy + 2, C.hudC, 'center', 9);
+    texte(ctx, (etat.h.vie / 2).toFixed(1).replace('.0', '') + ' coeurs restants',
+      cx, cy + 14, C.hudT, 'center', 8);
+    texte(ctx, 'ENTREE pour recommencer', cx, cy + 30, C.hudC, 'center', 9);
+  }
+}
+
+function dessinerFanal(ctx, etat) {
+  if (etat.salle !== 3) return;
+  var x = 7 * TUILE, y = 4 * TUILE + HUD_H;
+  rect(ctx, x, y, 32, 32, C.murB);
+  rect(ctx, x + 2, y + 2, 28, 5, C.murH);
+  rect(ctx, x + 8, y + 8, 16, 20, C.porteO);
+  rect(ctx, x + 10, y + 10, 12, 16, C.porte);
+  if (etat.fanal) {
+    rect(ctx, x + 10, y + 4, 12, 10, C.fanal);
+    rect(ctx, x + 6, y + 8, 20, 4, C.fanal);
+    rect(ctx, x + 14, y - 2, 4, 8, C.flash);
+  } else {
+    rect(ctx, x + 12, y + 14, 8, 6, C.murO);
+  }
+}
+
+function dessinerObjets(ctx, etat) {
+  var i, o, x, y;
+  dessinerFanal(ctx, etat);
+  for (i = 0; i < etat.objets.length; i++) {
+    o = etat.objets[i];
+    if (o.salle !== etat.salle) continue;
+    x = o.x; y = o.y + HUD_H;
+    if (o.type === 'coeur') {
+      rect(ctx, x, y + 1, 8, 6, C.coeurO);
+      rect(ctx, x + 1, y, 2, 2, C.coeur);
+      rect(ctx, x + 5, y, 2, 2, C.coeur);
+      rect(ctx, x + 1, y + 2, 6, 3, C.coeur);
+      rect(ctx, x + 3, y + 5, 2, 2, C.coeur);
+    } else {
+      rect(ctx, x, y + 1, 5, 5, C.porteO);
+      rect(ctx, x + 1, y + 2, 3, 3, C.clef);
+      rect(ctx, x + 4, y + 3, 4, 2, C.clef);
+      rect(ctx, x + 6, y + 5, 2, 2, C.clef);
+    }
+  }
+}
+
+function dessinerEnnemis(ctx, etat) {
+  var i, en, x, y, corps, ombre, blesse;
+  for (i = 0; i < etat.ennemis.length; i++) {
+    en = etat.ennemis[i];
+    if (en.salle !== etat.salle) continue;
+    x = en.x; y = en.y + HUD_H;
+    blesse = en.inv > 0 && Math.floor(en.inv * 30) % 2 === 0;
+    if (en.type === 'rodeur') { corps = C.rodeur; ombre = C.rodeurO; }
+    else if (en.type === 'chargeur') { corps = C.chargeur; ombre = C.chargeurO; }
+    else { corps = C.gardien; ombre = C.gardienO; }
+    if (blesse) corps = C.flash;
+    if (en.type === 'rodeur') {
+      /* trapu, deux pattes, deux yeux */
+      rect(ctx, x + 1, y + 2, 10, 9, ombre);
+      rect(ctx, x + 2, y + 3, 8, 7, corps);
+      rect(ctx, x + 3, y + 5, 2, 2, C.oeil);
+      rect(ctx, x + 7, y + 5, 2, 2, C.oeil);
+      rect(ctx, x + 2, y + 10, 2, 2, ombre);
+      rect(ctx, x + 8, y + 10, 2, 2, ombre);
+    } else if (en.type === 'chargeur') {
+      /* fuseau pointu : on voit d'où il partira */
+      rect(ctx, x + 2, y + 1, 8, 10, ombre);
+      rect(ctx, x + 3, y + 2, 6, 8, corps);
+      rect(ctx, x + 5, y, 2, 2, ombre);
+      rect(ctx, x + 5, y + 10, 2, 2, ombre);
+      rect(ctx, x + 4, y + 4, 4, 3, C.oeil);
+      if (en.mode === 'charge') rect(ctx, x, y + 4, 12, 3, C.flash);
+    } else {
+      /* le Gardien : plus large, casque et cornes */
+      rect(ctx, x, y + 1, 12, 11, ombre);
+      rect(ctx, x + 1, y + 2, 10, 9, corps);
+      rect(ctx, x, y, 3, 3, ombre);
+      rect(ctx, x + 9, y, 3, 3, ombre);
+      rect(ctx, x + 2, y + 4, 3, 3, C.oeil);
+      rect(ctx, x + 7, y + 4, 3, 3, C.oeil);
+      rect(ctx, x + 3, y + 9, 6, 2, ombre);
+      if (en.mode === 'telegraphe') rect(ctx, x + 1, y + 2, 10, 9, C.flash);
+    }
+    if (en.pvMax > 1) {
+      rect(ctx, x, y - 3, en.pvMax * 3, 2, C.murO);
+      rect(ctx, x, y - 3, Math.max(0, en.pv) * 3, 2, C.coeur);
+    }
+  }
+}
+
+var CONSTANTES = {
+  TUILE: TUILE, COLS: COLS, RANGS: RANGS, LARGEUR: LARGEUR, HAUTEUR: HAUTEUR,
+  HUD_H: HUD_H, PAS_DT: PAS_DT, DT_MAX: DT_MAX, VITESSE_HEROS: VITESSE_HEROS,
+  VIE_MAX: VIE_MAX, DEGATS: DEGATS, PV: PV, ATK_DUREE: ATK_DUREE,
+  ATK_RECHARGE: ATK_RECHARGE, ATK_PORTEE: ATK_PORTEE, INVUL_HEROS: INVUL_HEROS,
+  INVUL_ENNEMI: INVUL_ENNEMI, GRAINE: GRAINE, TUILES: TUILES, SALLES: SALLES,
+  H_BOITE: H_BOITE, E_BOITE: E_BOITE, O_BOITE: O_BOITE,
+  RECUL_HEROS: RECUL_HEROS, RECUL_ENNEMI: RECUL_ENNEMI,
+  V_RODEUR: V_RODEUR, V_CHARGEUR: V_CHARGEUR, V_GARDIEN: V_GARDIEN,
+  V_GARDIEN_CHARGE: V_GARDIEN_CHARGE, GRILLES: GRILLES, SORTIES: SORTIES
+};
+
+window.__JEU = { nouvelEtat: nouvelEtat, pas: pas, dessiner: dessiner, CONSTANTES: CONSTANTES };
+
+})(window);
+</script>
+
+<script id="jeu-page">
+(function () {
+  'use strict';
+  var J = window.__JEU;
+  if (!J) return;
+  var toile = document.getElementById('cave');
+  var ctx = toile.getContext('2d', { alpha: false });
+  var etat = J.nouvelEtat(J.CONSTANTES.GRAINE);
+
+  var CARTE = {
+    ArrowUp: 'haut', ArrowDown: 'bas', ArrowLeft: 'gauche', ArrowRight: 'droite',
+    KeyW: 'haut', KeyS: 'bas', KeyA: 'gauche', KeyD: 'droite',
+    Space: 'attaque', Enter: 'entree', NumpadEnter: 'entree'
+  };
+  var touches = { haut: false, bas: false, gauche: false, droite: false,
+    attaque: false, entree: false };
+
+  function onTouche(ev, enfonce) {
+    var nom = CARTE[ev.code];
+    if (!nom) return;
+    /* ne jamais confisquer la touche a un element interactif : sans cette garde,
+       un visiteur au clavier seul atteint les liens et le bouton de la Discotheque
+       mais n en active aucun — le jeu l enferme dans la page. */
+    var t = ev.target;
+    if (t && t.closest && t.closest('a,button,input,select,textarea,[contenteditable]')) return;
+    ev.preventDefault();
+    touches[nom] = enfonce;
+  }
+  window.addEventListener('keydown', function (ev) { onTouche(ev, true); }, { passive: false });
+  window.addEventListener('keyup', function (ev) { onTouche(ev, false); }, { passive: false });
+  window.addEventListener('blur', function () {
+    var n;
+    for (n in touches) touches[n] = false;
+    /* forcer le front : si Entree est physiquement enfoncee au moment du blur,
+       etat.ent vaut deja true et la pression synthetique ne produit aucun front —
+       la fenetre perdait le focus et le monde continuait de tourner. */
+    if (etat.phase === 'jeu') {
+      var sansFront = Object.assign({}, etat, { ent: false });
+      etat = J.pas(sansFront, { entree: true }, 0);
+    }
+  });
+
+  function ajuster() {
+    var dispo = toile.parentNode.clientWidth;
+    var ech = Math.floor(dispo / J.CONSTANTES.LARGEUR);
+    if (ech >= 1) toile.style.width = Math.min(ech, 2) * J.CONSTANTES.LARGEUR + 'px';
+    else toile.style.width = '100%';
+  }
+  window.addEventListener('resize', ajuster);
+  ajuster();
+
+  var PAS_DT = J.CONSTANTES.PAS_DT, DT_MAX = J.CONSTANTES.DT_MAX;
+  var reste = 0, dernier = 0;
+
+  function boucle(ms) {
+    if (!dernier) dernier = ms;
+    var dt = (ms - dernier) / 1000;
+    dernier = ms;
+    if (!(dt > 0)) dt = 0;
+    if (dt > 0.25) dt = 0.25;
+    reste += dt;
+    var garde = 0;
+    while (reste >= PAS_DT && garde < 12) {
+      etat = J.pas(etat, touches, PAS_DT);
+      reste -= PAS_DT;
+      garde++;
+    }
+    if (garde >= 12) reste = 0;
+    ctx.imageSmoothingEnabled = false;
+    J.dessiner(ctx, etat);
+    window.requestAnimationFrame(boucle);
+  }
+  window.requestAnimationFrame(boucle);
+
+  toile.addEventListener('click', function () { toile.focus(); });
+})();
+</script>
+<script defer src="../lecteur.js?v=4"></script>
+</body>
+</html>
