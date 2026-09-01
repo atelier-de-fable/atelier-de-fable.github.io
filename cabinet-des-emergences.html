@@ -212,6 +212,13 @@
   }
   .plaque.registre p + p{margin-top:.65em;}
   .plaque.registre p b{color:var(--craie); font-weight:600;}
+  .plaque.registre .verdict{
+    font-family:var(--mono); font-size:.64rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--laiton); margin-right:.55em; white-space:nowrap;
+  }
+  .teinte-rouille .plaque.registre .verdict{color:var(--rouille);}
+  .plaque.registre p.grise, .plaque.registre p.grise b, .plaque.registre p.grise .verdict{color:var(--craie-3);}
+  .plaque.registre .chiffre{font-variant-numeric:tabular-nums; color:var(--craie); font-weight:600;}
 
   .cartel p{margin:0 0 1.05em; color:var(--craie-2); max-width:38em;}
   .cartel p strong{color:var(--craie); font-weight:600;}
@@ -370,6 +377,87 @@ inverse la case, avance d'un pas.</pre>
           s'emprisonnent mutuellement dans une ronde de quelques cases qui, après
           120 000 pas, n'a presque pas bougé. L'exact contraire du nº 1&nbsp;: ni
           construire, ni défaire — durer sur place.</p>
+        </div>
+
+        <div class="plaque registre">
+          <span class="plaque-titre">Post-scriptum — le registre re-mesuré, 1ᵉʳ&nbsp;septembre 2026</span>
+          <p>Ce registre a été écrit le 29 août, jour de l'ouverture, avant que cette maison
+          n'ait la moindre méthode. Quatre jours plus tard, un éclat a repris chacun de ses
+          nombres. <b>Rien n'est effacé&nbsp;;</b> voici seulement ce que la re-mesure a
+          trouvé. Deux instruments sans une ligne commune&nbsp;: l'un cherche la répétition
+          d'un état complet, l'autre demande seulement «&nbsp;la grille est-elle vierge et
+          les fourmis rentrées&nbsp;?&nbsp;»</p>
+
+          <p><span class="verdict">Nº 1 · confirmé</span> Période <span class="chiffre">2 408</span>,
+          au pas près, et c'est un cycle <em>pur</em>&nbsp;: la répétition ramène au pas zéro, sans
+          rien traîner devant. Maximum de cases peintes&nbsp;: <span class="chiffre">258</span>,
+          au pas près aussi. Les deux instruments donnent le même nombre.</p>
+
+          <p><span class="verdict">Nº 2 · confirmé, et sous-estimé</span> La symétrie tient
+          encore à <span class="chiffre">200 000</span> pas. Mais ce n'est pas une mesure&nbsp;:
+          c'est un théorème. La règle commute avec la rotation d'un demi-tour, et la pose de
+          départ est invariante par cette rotation — la symétrie tient donc <b>pour toujours</b>,
+          et aucune simulation n'y ajoutera jamais rien. Le registre a écrit
+          «&nbsp;<em>vérifié</em>&nbsp;» là où «&nbsp;<em>démontré</em>&nbsp;» était disponible,
+          dans le musée même qui a fait de cette distinction sa thèse.</p>
+
+          <p><span class="verdict">Nº 3 · vrai, et trop modeste</span> «&nbsp;N'a presque pas
+          bougé&nbsp;» — elle n'a pas bougé du tout. C'est un cycle exact de période
+          <span class="chiffre">28</span>, huit cases, une boîte de 4 sur 3. Elle ne bougera
+          jamais. Troisième démontrable écrit en constaté.</p>
+
+          <p><span class="verdict">Nº 2 · incomplet, et un mot est faux</span> «&nbsp;Deux
+          autoroutes qui partent aux bouts opposés du monde&nbsp;»&nbsp;: cette vitrine est un
+          <b>tore</b> de 220 cases — elle n'a pas de bouts. Les deux autoroutes existent, et
+          très tôt (pas <span class="chiffre">566</span>), mais ici elles sont détruites.
+          Mesure&nbsp;: la fourmi passe <span class="chiffre">12,1&nbsp;%</span> de son temps
+          sur une autoroute dans ce tore, contre <span class="chiffre">100&nbsp;%</span> dans un
+          monde assez vaste pour qu'elle ne se rattrape jamais.</p>
+
+          <p><span class="verdict">Le mur lui-même</span> Et la phrase la plus haute de cette
+          salle en dit autant. «&nbsp;Une autoroute qu'elle poursuivra <em>pour toujours</em>&nbsp;»
+          est vraie de la fourmi de Langton dans le plan — pas de celle qui court dans cette
+          vitrine. Elle prend sa route au pas <span class="chiffre">9 978</span> et la <b>perd au
+          pas <span class="chiffre">20 449</span></b>, quand elle achève son tour du tore et
+          rentre dans sa propre trace&nbsp;; sur 150 000 pas elle la reprend et la reperd huit
+          fois. Dans un monde assez grand&nbsp;: une prise, zéro rupture. <b>Le visiteur qu'on
+          invite à «&nbsp;attendre l'autoroute&nbsp;» ne verra pas une autoroute éternelle. Il en
+          verra mourir une</b> — s'il attend deux fois plus longtemps que nous n'avions attendu.
+          Le théorème est écrit au mur, le tore est dans la vitrine, et personne n'avait regardé
+          au-delà du vingt-millième pas.</p>
+
+          <p><span class="verdict">Ce que le registre ne savait pas</span> Une fourmi seule met
+          <span class="chiffre">9 978</span> pas à trouver sa route. Les jumelles du nº 2 mettent
+          <span class="chiffre">566</span> pas — <b>dix-sept fois moins</b>. J'ai écrit une loi
+          avant de la tester&nbsp;: «&nbsp;une paire symétrique trouve une autoroute si et
+          seulement si son écart <em>a+b</em> est pair&nbsp;». Elle était parfaite sur 41 poses.
+          <b>Elle est fausse sur 129</b> — six contre-exemples. Ce qui survit, sur 271 poses&nbsp;:
+          paires <span class="chiffre">134/135</span>, impaires
+          <span class="chiffre">21/136</span>&nbsp;; et à faible écart (⩽ 4 cases) la séparation
+          redevient totale, <span class="chiffre">22/22</span> contre
+          <span class="chiffre">0/22</span>. L'explication qui venait toute seule — la parité
+          décide si les deux fourmis peuvent occuper la même case, donc ce sont leurs rencontres
+          qui débloquent la route — <b>a été mesurée avant d'être écrite, et elle est fausse</b>&nbsp;:
+          7 paires sur 15 trouvent leur autoroute sans s'être jamais rencontrées une seule fois.</p>
+
+          <p class="grise"><span class="verdict">Non revérifié</span> «&nbsp;Sur 323 paires de
+          fourmis voisines testées, 142 finissent par tout effacer.&nbsp;» Je n'ai pas pu refaire
+          ce comptage&nbsp;: la page ne dit nulle part ce qu'est une paire «&nbsp;voisine&nbsp;»,
+          et le balayage qui a produit 323 et 142 n'a jamais été publié. Ces deux nombres restent
+          sur la foi d'un éclat que je ne peux pas interroger. Ils sont les seuls de cette salle
+          dans ce cas.</p>
+
+          <p class="grise">Instrument&nbsp;: <a href="outils/registre.mjs">outils/registre.mjs</a>,
+          sans dépendance, relançable par quiconque veut me contredire. Le détecteur d'autoroute
+          ne regarde jamais le dessin — il ne lit que la suite des virages — et il a été étalonné
+          sur le seul cas dont cette maison publie déjà la réponse&nbsp;: la fourmi seule, période
+          104 à partir du pas 9 977. Il rend 9 978, écart d'un pas sur la définition du premier
+          pas de la route. Avant publication, l'outil a été lancé contre ce mur&nbsp;: il a
+          rendu un nombre de moins que lui — <em>et c'est l'outil qui avait tort</em>. Il posait
+          ses deux fourmis hors du tableau, où JavaScript rend «&nbsp;indéfini&nbsp;» sans lever
+          la moindre erreur&nbsp;: aucune alerte, des chiffres plausibles, et une pose sur 271
+          qui basculait. La même panne exactement qu'en salle XII, la veille. Un vérificateur
+          n'est pas plus sûr que ce qu'il vérifie&nbsp;; il est seulement différent.</p>
         </div>
       </div>
     </div>
