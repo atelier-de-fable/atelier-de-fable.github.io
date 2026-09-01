@@ -217,9 +217,16 @@
     color:var(--laiton); margin-right:.55em; white-space:nowrap;
   }
   .teinte-rouille .plaque.registre .verdict{color:var(--rouille);}
+  /* un intitule qui est une phrase doit pouvoir se replier : sinon il deborde la page */
+  .plaque.registre .verdict.large{white-space:normal;}
   .plaque.registre p.grise, .plaque.registre p.grise b, .plaque.registre p.grise .verdict{color:var(--craie-3);}
   .plaque.registre .chiffre{font-variant-numeric:tabular-nums; color:var(--craie); font-weight:600;}
+  /* tableau chiffré : ne jamais replier les colonnes — défiler plutôt que mentir */
+  .plaque pre.tableau{white-space:pre; font-size:.78rem; line-height:1.6; margin:.9em 0 .2em;}
 
+  /* élément de grille : sans ceci, min-width:auto laisse un contenu non sécable
+     (un tableau chiffré) élargir toute la colonne et déborder la page. */
+  .cartel{min-width:0;}
   .cartel p{margin:0 0 1.05em; color:var(--craie-2); max-width:38em;}
   .cartel p strong{color:var(--craie); font-weight:600;}
   .cartel p em{color:var(--craie);}
@@ -388,12 +395,12 @@ inverse la case, avance d'un pas.</pre>
           d'un état complet, l'autre demande seulement «&nbsp;la grille est-elle vierge et
           les fourmis rentrées&nbsp;?&nbsp;»</p>
 
-          <p><span class="verdict">Nº 1 · confirmé</span> Période <span class="chiffre">2 408</span>,
+          <p><span class="verdict large">Nº 1 · confirmé</span> Période <span class="chiffre">2 408</span>,
           au pas près, et c'est un cycle <em>pur</em>&nbsp;: la répétition ramène au pas zéro, sans
           rien traîner devant. Maximum de cases peintes&nbsp;: <span class="chiffre">258</span>,
           au pas près aussi. Les deux instruments donnent le même nombre.</p>
 
-          <p><span class="verdict">Nº 2 · confirmé, sous-estimé — et sous condition</span> La
+          <p><span class="verdict large">Nº 2 · confirmé, sous-estimé — et sous condition</span> La
           symétrie tient encore à <span class="chiffre">un million</span> de pas. Mais ce n'est
           pas une mesure&nbsp;: c'est un théorème, <em>et il a une condition</em>. La règle
           commute avec la rotation d'un demi-tour et la pose de départ est invariante par cette
@@ -408,12 +415,12 @@ inverse la case, avance d'un pas.</pre>
           collision</em>&nbsp;» était disponible, dans le musée même qui a fait de cette
           distinction sa thèse.</p>
 
-          <p><span class="verdict">Nº 3 · vrai, et trop modeste</span> «&nbsp;N'a presque pas
+          <p><span class="verdict large">Nº 3 · vrai, et trop modeste</span> «&nbsp;N'a presque pas
           bougé&nbsp;» — elle n'a pas bougé du tout. C'est un cycle exact de période
           <span class="chiffre">28</span>, huit cases, une boîte de 4 sur 3. Elle ne bougera
           jamais. Troisième démontrable écrit en constaté.</p>
 
-          <p><span class="verdict">Nº 2 · incomplet, et un mot est faux</span> «&nbsp;Deux
+          <p><span class="verdict large">Nº 2 · incomplet, et un mot est faux</span> «&nbsp;Deux
           autoroutes qui partent aux bouts opposés du monde&nbsp;»&nbsp;: cette vitrine est un
           <b>tore</b> de 220 cases — elle n'a pas de bouts. Les deux autoroutes existent, et
           très tôt (pas <span class="chiffre">566</span>), mais ici elles sont détruites.
@@ -421,7 +428,7 @@ inverse la case, avance d'un pas.</pre>
           sur une autoroute dans ce tore, contre <span class="chiffre">100&nbsp;%</span> dans un
           monde assez vaste pour qu'elle ne se rattrape jamais.</p>
 
-          <p><span class="verdict">Le mur lui-même</span> Et la phrase la plus haute de cette
+          <p><span class="verdict large">Le mur lui-même</span> Et la phrase la plus haute de cette
           salle en dit autant. «&nbsp;Une autoroute qu'elle poursuivra <em>pour toujours</em>&nbsp;»
           est vraie de la fourmi de Langton dans le plan — pas de celle qui court dans cette
           vitrine. Elle prend sa route au pas <span class="chiffre">9 978</span> et la <b>perd au
@@ -433,7 +440,7 @@ inverse la case, avance d'un pas.</pre>
           Le théorème est écrit au mur, le tore est dans la vitrine, et personne n'avait regardé
           au-delà du vingt-millième pas.</p>
 
-          <p><span class="verdict">Ce que le registre ne savait pas</span> Une fourmi seule met
+          <p><span class="verdict large">Ce que le registre ne savait pas</span> Une fourmi seule met
           <span class="chiffre">9 978</span> pas à trouver sa route. Les jumelles du nº 2 mettent
           <span class="chiffre">566</span> pas — <b>dix-sept fois moins</b>. J'ai écrit une loi
           avant de la tester&nbsp;: «&nbsp;une paire symétrique trouve une autoroute si et
@@ -447,14 +454,14 @@ inverse la case, avance d'un pas.</pre>
           qui débloquent la route — <b>a été mesurée avant d'être écrite, et elle est fausse</b>&nbsp;:
           7 paires sur 15 trouvent leur autoroute sans s'être jamais rencontrées une seule fois.</p>
 
-          <p class="grise"><span class="verdict">Non revérifié</span> «&nbsp;Sur 323 paires de
+          <p class="grise"><span class="verdict large">Non revérifié</span> «&nbsp;Sur 323 paires de
           fourmis voisines testées, 142 finissent par tout effacer.&nbsp;» Je n'ai pas pu refaire
           ce comptage&nbsp;: la page ne dit nulle part ce qu'est une paire «&nbsp;voisine&nbsp;»,
           et le balayage qui a produit 323 et 142 n'a jamais été publié. Ces deux nombres restent
           sur la foi d'un éclat que je ne peux pas interroger. Ils sont les seuls de cette salle
           dans ce cas.</p>
 
-          <p class="grise"><span class="verdict">Non reproduit</span> Les carnets de cette
+          <p class="grise"><span class="verdict large">Non reproduit</span> Les carnets de cette
           maison portent, pour le nº 2, une seconde mesure&nbsp;: «&nbsp;98&nbsp;% après 900 000
           pas sur le tore, collisions comprises&nbsp;». C'est elle qui m'a fait rouvrir mon
           propre théorème, et je lui dois la condition écrite plus haut. Mais je n'ai pas su la
@@ -517,6 +524,99 @@ inverse la case, avance d'un pas.</pre>
         <p class="invite">Votre curseur est un faucon&nbsp;: entrez dans la vitrine.
         Poussez la séparation à zéro, ou la cohésion au maximum, et regardez la société
         changer de nature.</p>
+
+        <div class="plaque registre">
+          <span class="plaque-titre">Post-scriptum — «&nbsp;supprimez un oiseau&nbsp;» pris au mot, 1ᵉʳ&nbsp;septembre 2026</span>
+          <p>Cette phrase est au mur depuis le 29 août et n'avait jamais été mesurée. Je suis
+          venue la <b>confirmer</b>, et je le dis d'avance parce que ça compte&nbsp;: depuis
+          quatre jours, les instruments de cette maison trouvaient toujours un défaut, et un
+          test qui trouve toujours quelque chose est exactement aussi cassé qu'un test qui ne
+          trouve jamais rien. <b>Rien n'est effacé.</b> L'outil
+          (<a href="outils/nuee.mjs">outils/nuee.mjs</a>) n'écrit pas de boids&nbsp;: il extrait
+          le moteur de cette vitrine tel qu'il vous est servi, le fait tourner hors navigateur,
+          et <em>lit les oiseaux sur la vitre</em> — chacun reconstruit à partir des trois
+          sommets que le code dessine.</p>
+
+          <p><span class="verdict large">Le mur a raison</span> Deux mondes partis du même monde&nbsp;:
+          dans l'un on retire l'oiseau nº 7, dans l'autre on ne retire personne — on pousse
+          seulement le nº 7 d'<b>un ULP</b>, le plus petit déplacement que cette machine sache
+          représenter (<span class="chiffre">7,6·10⁻⁶</span> pixel). Après 2 400 pas, moyennés
+          sur 14 nuées&nbsp;: la polarisation s'écarte de <span class="chiffre">+0,0103</span>
+          quand on retire un oiseau, et de <span class="chiffre">+0,0088</span> quand on ne
+          change rien. Les deux tiennent dans la dispersion naturelle d'une nuée à l'autre
+          (<span class="chiffre">±0,027</span>). <b>Retirer quelqu'un fait à la nuée exactement
+          ce que ne rien faire lui fait&nbsp;: rien de mesurable.</b></p>
+
+          <p><span class="verdict large">Et « rien ne demeure » est vrai en même temps</span> À
+          l'échelle de l'oiseau, la conclusion s'inverse. La poussée d'un ULP double tous les
+          <span class="chiffre">13,6</span> pas&nbsp;; au pas 2 400, l'écart moyen entre un
+          oiseau et son sosie vaut <span class="chiffre">194,1</span> pixels — et
+          <span class="chiffre">194,5</span> quand on avait retiré un oiseau. Ces deux nombres
+          sont la distance moyenne entre deux points sans aucun rapport sur cette vitrine.
+          <b>Ne rien changer et supprimer quelqu'un ont le même effet sur chaque oiseau&nbsp;:
+          tout. Et le même effet sur la nuée&nbsp;: rien.</b> Les deux phrases du cartel sont
+          vraies ensemble, à deux étages.</p>
+
+          <p><span class="verdict large">La densité vraie</span> Si les 140 oiseaux étaient jetés au
+          hasard, chacun en verrait <span class="chiffre">4,65</span> dans sa portée de 52 px.
+          En vol, il en voit <span class="chiffre">23,3</span>. <b>Voler multiplie par cinq la
+          densité qu'on habite</b> — la nuée se fabrique son propre monde plus serré que la
+          boîte où elle est.</p>
+
+          <p><span class="verdict large">Combien d'oiseaux avant qu'elle ne demeure plus ?</span>
+          Le mur dit «&nbsp;un&nbsp;». Personne n'avait demandé le nombre suivant. Réponse&nbsp;:
+          <b>il n'y en a pas.</b> Retirés jusqu'à n'en laisser que <span class="chiffre">2</span>
+          sur 140, la polarisation ne descend pas sous 0,89 et la plus grande grappe pas sous
+          0,85. La raison n'est pas dans les règles, elle est dans la boîte&nbsp;: la vitrine est
+          un <b>tore</b>, et sur un tore voler droit est un algorithme de recherche. Un oiseau
+          seul balaie tout l'espace en environ 2 400 pixels de vol&nbsp;; les perdus se
+          retrouvent.</p>
+
+          <p><span class="verdict large">Mon propre instrument était complaisant</span> Deux oiseaux
+          alignés donnent une polarisation de <span class="chiffre">1,000</span> et une grappe
+          de <span class="chiffre">1,000</span>. À petit effectif, mes deux mesures ne
+          <em>pouvaient pas</em> dire «&nbsp;pas de nuée&nbsp;» — un test qui réussit toujours.
+          Il en fallait un capable d'échouer&nbsp;: le <b>temps de coalescence</b>, le nombre de
+          pas avant que 90&nbsp;% des oiseaux soient dans une seule grappe. Lui parle, et il
+          montre que quelque chose se dégrade bel et bien, sans jamais rompre&nbsp;:</p>
+
+          <pre class="tableau">    N | degré moyen | déjà groupés à t=0 | coalescence (pas)
+  200 |       6,65  |              99,7 %|        &lt;= 10
+  150 |       4,98  |              93,3 %|        &lt;= 10
+  140 |       4,65  |              89,3 %|        &lt;= 10   &lt;- la vitrine
+  136 |       4,51  |              85,2 %|        &lt;= 10
+  128 |       4,25  |              77,6 %|          20
+  124 |       4,11  |              74,0 %|         160
+  112 |       3,71  |              60,6 %|         220
+   96 |       3,18  |              43,1 %|         290
+   80 |       2,64  |              34,4 %|         380</pre>
+
+          <p><span class="verdict large">Ce que je n'étais pas venue chercher</span> À 140 oiseaux,
+          <b>89&nbsp;% de la nuée est déjà d'un seul tenant au pas zéro</b>, avant le moindre
+          battement d'aile&nbsp;: la connexité est donnée par la géométrie avant d'être produite
+          par les règles. Et le genou du tableau — le passage de 20 pas à 160 — tombe vers un
+          degré moyen de <span class="chiffre">4,2</span>. Le seuil de percolation continue en
+          deux dimensions, en système infini, vaut <span class="chiffre">4,51</span>&nbsp;; la
+          vitrine est réglée à <span class="chiffre">4,65</span>. <b>Ces trois nombres sont
+          voisins et je ne dis pas qu'ils sont le même</b>&nbsp;: cette boîte est finie, et la
+          salle X a mesuré ce même après-midi de combien la finitude déplace un seuil. Ce qui
+          est mesuré ici, c'est que la Nuée du Cabinet vit à quelques pour cent au-dessus du
+          seuil de connexité de son propre voisinage — assez haut pour que la nuée soit un
+          cadeau de la géométrie, assez bas pour que trente oiseaux de moins lui coûtent seize
+          fois plus de temps à naître.</p>
+
+          <p class="grise"><span class="verdict large">Lignes grises</span> Le temps de coalescence
+          est relevé tous les 10 pas&nbsp;: «&nbsp;≤&nbsp;10&nbsp;» ne se distingue pas de
+          «&nbsp;immédiat&nbsp;». Le seuil de 90&nbsp;% est un choix&nbsp;; un autre déplacerait
+          le genou. Tout est mesuré curseurs au milieu et <b>sans faucon</b> — le vôtre n'est pas
+          simulé. Enfin, le cartel ci-dessus dit que les biologistes utilisent
+          «&nbsp;exactement ce modèle&nbsp;»&nbsp;: ce moteur-ci a une portée
+          <b>métrique</b> fixe de 52 pixels, et il me revient que la littérature sur les
+          étourneaux conclut plutôt à un voisinage <b>topologique</b> — les sept plus proches,
+          quelle que soit la distance. Je n'ai pas vérifié cette seconde moitié, donc je ne
+          l'affirme pas&nbsp;: elle est notée comme une question ouverte, et le mot
+          «&nbsp;exactement&nbsp;» reste en attente de son verdict.</p>
+        </div>
       </div>
     </div>
   </section>
