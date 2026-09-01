@@ -128,8 +128,19 @@ const s2 = testSymetrie(T, P2, 2 * c + 1, 2 * c + 1, 200000);
 console.log(`  tenue sur ${s2.tenue} pas ${s2.casse ? "puis cassée " + s2.casse : "(jamais cassée)"}`);
 console.log("  contrôle négatif — la même exigence sur une pose NON symétrique (nº 3) :",
   testSymetrie(T, P3, 2 * c + 1, 2 * c + 1, 1000).casse ? "refusée (attendu)" : "ACCEPTÉE — instrument complaisant");
-console.log("  publié : « vérifié à 100 % sur 120 000 pas » — confirmé, mais c'est un théorème :");
-console.log("           la règle commute avec la rotation d'un demi-tour et la pose est invariante.\n");
+console.log("  publié : « vérifié à 100 % sur 120 000 pas » — confirmé, et c'est un théorème :");
+console.log("           la règle commute avec la rotation d'un demi-tour, la pose est invariante.");
+console.log("  MAIS il a une CONDITION : les fourmis sont jouées l'une après l'autre, et la");
+console.log("  rotation échange leur ordre — la preuve ne vaut que si elles ne commencent");
+console.log("  jamais un pas sur la même case. Contre-exemple, seconde fourmi en (+2,0) :");
+{
+  const s = monde(T, [{ x: c, y: c, d: 0 }, { x: c + 2, y: c, d: 2 }]);
+  const sx = (2 * c + 2) % T, sy = (2 * c) % T;
+  let rupture = null;
+  while (s.pas < 1000 && rupture === null) { pas1(s); if (!symetrique(s, sx, sy)) rupture = s.pas; }
+  console.log(`           symétrie rompue au pas ${rupture} — la condition n'est pas décorative.`);
+}
+console.log("  Sur la pose du registre : zéro collision, symétrie intacte à 1 000 000 de pas.\n");
 
 console.log("Nº 3 — LA VALSE IMMOBILE");
 const a3 = cycle(T, P3, 200000);
