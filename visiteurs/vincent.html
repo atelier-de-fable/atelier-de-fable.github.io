@@ -161,12 +161,17 @@ var DIAG = 0.7071067811865476, EPS = 1e-9;
 var DEGATS = { rodeur: 1, chargeur: 1, gardien: 2 };
 var PV = { rodeur: 1, chargeur: 2, gardien: 3 };
 var TUILES = { SOL: 0, MUR: 1, EAU: 2, PORTE: 3, SORTIE: 4 };
-var SALLES = ['Le Seuil', 'La Citerne', 'Le Réduit', 'La Chambre du Fanal'];
+
 var V_RODEUR = 28, V_CHARGEUR = 90, V_GARDIEN = 34, V_GARDIEN_CHARGE = 120;
 var DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
-/* ---------- plans des quatre caves ---------- */
-var PLANS = [
+/* ---------- LE MONDE EST UNE DONNEE ----------
+   Les cinq structures qui decrivent un monde (noms, plans, sorties, ennemis,
+   objets) sont rassemblees dans un seul objet. Le moteur ne les connait plus
+   que par chargerMonde() : ecrire un autre monde ne demande pas de toucher au
+   moteur, seulement de lui passer un autre objet. */
+var MONDE_CAVES = {};
+MONDE_CAVES.plans = [
   ['################',
    '#..............#',
    '#..##......##..#',
@@ -220,22 +225,72 @@ function codeDalle(ch) {
   if (ch === 'S') return TUILES.SORTIE;
   return TUILES.SOL;
 }
-var GRILLES = (function () {
+function construireGrilles(plans) {
   var g = [], s, r, c, ligne, rang;
-  for (s = 0; s < PLANS.length; s++) {
+  for (s = 0; s < plans.length; s++) {
     ligne = [];
     for (r = 0; r < RANGS; r++) {
       rang = [];
-      for (c = 0; c < COLS; c++) rang.push(codeDalle(PLANS[s][r].charAt(c)));
+      for (c = 0; c < COLS; c++) rang.push(codeDalle(plans[s][r].charAt(c)));
       ligne.push(rang);
     }
     g.push(ligne);
   }
   return g;
-})();
+}
+
+/* ---------- charger un monde, et le VERIFIER avant de le croire ----------
+   verifierMonde ne fait confiance a rien : il relit les plans caractere par
+   caractere, controle que chaque sortie est bien sur un bord et mene a une salle
+   existante, et qu aucun ennemi ni objet n est pose dans un mur. Il rend la liste
+   des fautes ; une liste vide est la seule autorisation de charger. */
+function verifierMonde(m) {
+  var f = [], s, r, c, i, x;
+  if (!m || !m.plans || !m.plans.length) { f.push('aucun plan'); return f; }
+  for (s = 0; s < m.plans.length; s++) {
+    if (m.plans[s].length !== RANGS) f.push('salle ' + s + ' : ' + m.plans[s].length + ' rangs au lieu de ' + RANGS);
+    for (r = 0; r < m.plans[s].length; r++) {
+      if (m.plans[s][r].length !== COLS) f.push('salle ' + s + ' rang ' + r + ' : ' + m.plans[s][r].length + ' colonnes au lieu de ' + COLS);
+      for (c = 0; c < m.plans[s][r].length; c++)
+        if ('#~PS.'.indexOf(m.plans[s][r].charAt(c)) < 0)
+          f.push('salle ' + s + ' (' + c + ',' + r + ') : caractere inconnu « ' + m.plans[s][r].charAt(c) + ' »');
+    }
+  }
+  if (!m.salles || m.salles.length !== m.plans.length) f.push('il faut un nom par salle');
+  if (!m.sorties || m.sorties.length !== m.plans.length) f.push('il faut une liste de sorties par salle');
+  else for (s = 0; s < m.sorties.length; s++) for (i = 0; i < m.sorties[s].length; i++) {
+    x = m.sorties[s][i];
+    if (x.vers < 0 || x.vers >= m.plans.length) f.push('salle ' + s + ' : sortie vers une salle inexistante (' + x.vers + ')');
+    if (x.c !== 0 && x.c !== COLS - 1 && x.r !== 0 && x.r !== RANGS - 1)
+      f.push('salle ' + s + ' : sortie (' + x.c + ',' + x.r + ') n est pas sur un bord');
+    if (m.plans[s][x.r].charAt(x.c) !== 'S' && m.plans[s][x.r].charAt(x.c) !== 'P')
+      f.push('salle ' + s + ' : sortie (' + x.c + ',' + x.r + ') n est pas une dalle S ou P');
+  }
+  var dansMur = function (liste, quoi) {
+    for (var k = 0; liste && k < liste.length; k++) {
+      var o = liste[k], ch;
+      if (o.salle < 0 || o.salle >= m.plans.length) { f.push(quoi + ' ' + o.id + ' : salle inexistante'); continue; }
+      if (o.c < 0 || o.c >= COLS || o.r < 0 || o.r >= RANGS) { f.push(quoi + ' ' + o.id + ' : hors grille'); continue; }
+      ch = m.plans[o.salle][o.r].charAt(o.c);
+      if (ch === '#' || ch === '~') f.push(quoi + ' ' + o.id + ' : pose dans un ' + (ch === '#' ? 'mur' : 'bassin'));
+    }
+  };
+  dansMur(m.ennemis, 'ennemi'); dansMur(m.objets, 'objet');
+  return f;
+}
+
+var SALLES, PLANS, SORTIES, MODELE_ENNEMIS, MODELE_OBJETS, GRILLES;
+function chargerMonde(m) {
+  var f = verifierMonde(m);
+  if (f.length) throw new Error('monde refuse : ' + f.join(' | '));
+  SALLES = m.salles; PLANS = m.plans; SORTIES = m.sorties;
+  MODELE_ENNEMIS = m.ennemis; MODELE_OBJETS = m.objets;
+  GRILLES = construireGrilles(PLANS);
+  return true;
+}
 
 /* sorties : dalle de bord -> salle voisine. bord = celui que l'on franchit. */
-var SORTIES = [
+MONDE_CAVES.sorties = [
   [{ c: 15, r: 5, vers: 1, bord: 'E' }],
   [{ c: 0, r: 5, vers: 0, bord: 'O' },
    { c: 7, r: 0, vers: 2, bord: 'N' },
@@ -246,17 +301,20 @@ var SORTIES = [
   [{ c: 0, r: 5, vers: 1, bord: 'O' }]
 ];
 
-var MODELE_ENNEMIS = [
+MONDE_CAVES.ennemis = [
   { id: 'rodeur-1', type: 'rodeur', salle: 1, c: 2, r: 1, dir: 1 },
   { id: 'rodeur-2', type: 'rodeur', salle: 1, c: 13, r: 9, dir: 3 },
   { id: 'chargeur-1', type: 'chargeur', salle: 2, c: 13, r: 5, dir: 3 },
   { id: 'gardien', type: 'gardien', salle: 3, c: 12, r: 5, dir: 3 }
 ];
-var MODELE_OBJETS = [
+MONDE_CAVES.objets = [
   { id: 'coeur-1', type: 'coeur', salle: 0, c: 7, r: 1 },
   { id: 'clef', type: 'clef', salle: 2, c: 7, r: 1 },
   { id: 'coeur-2', type: 'coeur', salle: 2, c: 13, r: 8 }
 ];
+
+MONDE_CAVES.salles = ['Le Seuil', 'La Citerne', 'Le Réduit', 'La Chambre du Fanal'];
+chargerMonde(MONDE_CAVES);
 
 /* ---------- hasard : xorshift32, la graine vit dans l'état ---------- */
 function xorshift(g) {
@@ -895,7 +953,8 @@ var CONSTANTES = {
   V_GARDIEN_CHARGE: V_GARDIEN_CHARGE, GRILLES: GRILLES, SORTIES: SORTIES
 };
 
-window.__JEU = { nouvelEtat: nouvelEtat, pas: pas, dessiner: dessiner, CONSTANTES: CONSTANTES };
+window.__JEU = { nouvelEtat: nouvelEtat, pas: pas, dessiner: dessiner, CONSTANTES: CONSTANTES,
+  chargerMonde: chargerMonde, verifierMonde: verifierMonde, MONDE_CAVES: MONDE_CAVES };
 
 })(window);
 </script>
