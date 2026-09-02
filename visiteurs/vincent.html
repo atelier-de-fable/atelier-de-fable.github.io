@@ -276,6 +276,98 @@ function verifierMonde(m) {
     }
   };
   dansMur(m.ennemis, 'ennemi'); dansMur(m.objets, 'objet');
+
+  /* ---------- ce que la premiere version ne voyait pas ----------
+     Un monde peut etre parfaitement bien forme ET injouable. La premiere version de ce
+     verificateur acceptait 100 salles engendrees sur 202 ou le heros naissait dans un
+     bassin et ne bougeait plus d une unite : elle refusait exactement les fautes que son
+     auteur avait imaginees, et aucune autre. Trouve par une main etrangere le 02/09.
+     Limite assumee : l accessibilite est calculee dalle a dalle, en 4-voisinage, la porte
+     etant tenue pour franchissable (la clef existe). C est une approximation genereuse :
+     elle ne produit pas de faux refus, elle peut laisser passer un couloir trop etroit. */
+  var DEPART_C = 2, DEPART_R = 5;          /* la dalle ou nouvelEtat() pose le heros */
+  function pleineIci(s, c, r) {
+    if (c < 0 || c >= COLS || r < 0 || r >= RANGS) return true;
+    var ch = m.plans[s][r].charAt(c);
+    return ch === '#' || ch === '~';
+  }
+  function atteignables(s, graines) {
+    var vus = [], i, j, file = [], n, c, r, d, nc, nr;
+    var D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    for (i = 0; i < RANGS; i++) { vus.push([]); for (j = 0; j < COLS; j++) vus[i].push(false); }
+    for (i = 0; i < graines.length; i++) {
+      c = graines[i][0]; r = graines[i][1];
+      if (!pleineIci(s, c, r) && !vus[r][c]) { vus[r][c] = true; file.push([c, r]); }
+    }
+    while (file.length) {
+      n = file.shift();
+      for (d = 0; d < 4; d++) {
+        nc = n[0] + D[d][0]; nr = n[1] + D[d][1];
+        if (nc < 0 || nc >= COLS || nr < 0 || nr >= RANGS) continue;
+        if (vus[nr][nc] || pleineIci(s, nc, nr)) continue;
+        vus[nr][nc] = true; file.push([nc, nr]);
+      }
+    }
+    return vus;
+  }
+  /* le heros reapparait d une dalle a l interieur du bord oppose, ordonnee conservee */
+  function arrivee(x) {
+    if (x.c === COLS - 1) return [1, x.r];
+    if (x.c === 0) return [COLS - 2, x.r];
+    if (x.r === RANGS - 1) return [x.c, 1];
+    return [x.c, RANGS - 2];
+  }
+  if (!f.length) {
+    if (pleineIci(0, DEPART_C, DEPART_R)) {
+      f.push('le heros nait sur une dalle pleine (' + DEPART_C + ',' + DEPART_R + ') de la salle 0');
+    } else {
+      var graines = [], vus = [], s2, k, x, a, dejaDit = {};
+      for (k = 0; k < m.plans.length; k++) graines.push(null);
+      graines[0] = [[DEPART_C, DEPART_R]];
+      var change = true;
+      while (change) {
+        change = false;
+        for (s2 = 0; s2 < m.plans.length; s2++) {
+          if (!graines[s2]) continue;
+          vus[s2] = atteignables(s2, graines[s2]);
+          for (k = 0; k < (m.sorties[s2] || []).length; k++) {
+            x = m.sorties[s2][k];
+            if (!vus[s2][x.r] || !vus[s2][x.r][x.c]) continue;   /* sortie inatteignable */
+            a = arrivee(x);
+            if (pleineIci(x.vers, a[0], a[1])) {
+              if (!dejaDit['a' + s2 + '_' + x.vers]) {
+                dejaDit['a' + s2 + '_' + x.vers] = 1;
+                f.push('salle ' + s2 + ' : on arrive dans une dalle pleine de la salle ' + x.vers);
+              }
+              continue;
+            }
+            if (!graines[x.vers]) { graines[x.vers] = [a]; change = true; }
+            else {
+              var connue = false;
+              for (var q = 0; q < graines[x.vers].length; q++)
+                if (graines[x.vers][q][0] === a[0] && graines[x.vers][q][1] === a[1]) connue = true;
+              if (!connue) { graines[x.vers].push(a); change = true; }
+            }
+          }
+        }
+      }
+      for (s2 = 0; s2 < m.plans.length; s2++)
+        if (!graines[s2]) f.push('salle ' + s2 + ' (« ' + m.salles[s2] + ' ») est inatteignable depuis le depart');
+      for (k = 0; m.objets && k < m.objets.length; k++) {
+        var o = m.objets[k];
+        if (!vus[o.salle] || !vus[o.salle][o.r] || !vus[o.salle][o.r][o.c])
+          f.push('objet ' + o.id + ' : pose sur une dalle inatteignable');
+      }
+      if ((m.sorties[0] || []).length) {
+        var une = false;
+        for (k = 0; k < m.sorties[0].length; k++) {
+          x = m.sorties[0][k];
+          if (vus[0][x.r] && vus[0][x.r][x.c]) une = true;
+        }
+        if (!une) f.push('salle 0 : aucune sortie n est atteignable depuis le depart');
+      }
+    }
+  }
   return f;
 }
 

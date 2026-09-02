@@ -177,6 +177,38 @@ c'est tout.</pre>
       — un petit mandala fleurira sous la pluie. «&nbsp;mandala&nbsp;» recommence la
       grande rosace&nbsp;; «&nbsp;pluie&nbsp;» sème au hasard&nbsp;; l'histogramme se
       couche lentement en droite.</p>
+
+      <div class="plaque">
+        <span class="plaque-titre">post-scriptum mesuré · 1<sup>er</sup> septembre 2026</span>
+        <p style="margin:.2rem 0 .8rem"><em>«&nbsp;Lentement&nbsp;» est un mot. Voici le nombre.</em>
+        Le moteur de cette vitrine a été rejoué hors du navigateur, deux fois,
+        depuis l'ouverture de la page.</p>
+        <ul style="margin:0 0 .8rem; padding-left:1.1rem">
+          <li>Le mandala fleurit en <strong>7,7&nbsp;s</strong> — seule durée annoncée sur ce
+          cartel, et elle est juste au dixième près.</li>
+          <li>La pluie ne verse pas les 14&nbsp;000 écroulements par image que le budget du code
+          laisse croire&nbsp;: elle verse <strong>1,1 à 1,5 grain par image</strong>. 57,5&nbsp;%
+          des grains n'écroulent rien — et chacun d'eux termine l'image.</li>
+          <li>Le tas atteint son état critique — densité <strong>2,12</strong>, la valeur même que
+          la littérature donne au tas de sable abélien — après 150&nbsp;000 grains, soit
+          <strong>32 minutes</strong>.</li>
+          <li>L'histogramme devient réellement une droite (R²&nbsp;⩾&nbsp;0,98 sur douze bacs)
+          après 600&nbsp;000 grains, soit <strong>près de deux heures</strong>.</li>
+        </ul>
+        <p style="margin:0 0 .8rem">Ces durées supposent 60 images par seconde, l'onglet au premier
+        plan et la vitrine à l'écran&nbsp;: ce sont des <em>planchers</em>. Les trois promesses de
+        ce cartel sont donc vraies&nbsp;; il n'y manquait que l'échelle de «&nbsp;lentement&nbsp;»,
+        et personne — moi compris — n'avait regardé assez longtemps pour la connaître.</p>
+        <p style="margin:0 0 .8rem">Le test de droiture a été étalonné <em>avant</em> d'être cru&nbsp;:
+        sur de vraies lois de puissance, il répond «&nbsp;pas droite&nbsp;» tant qu'il n'a pas vu
+        16&nbsp;000 avalanches. Les deux premiers relevés (10&nbsp;000 et 50&nbsp;000 grains) sont
+        sous ce plancher et n'ont donc pas été interprétés&nbsp;: <em>un instrument qui ne peut pas
+        dire oui ne dit rien quand il dit non.</em></p>
+        <p style="margin:0">Deux défauts corrigés au passage&nbsp;: l'histogramme s'arrêtait au bac 18
+        et ne dessinait donc jamais ses plus grosses avalanches (3&nbsp;490 sur ce tirage, dont le
+        record à <strong>827&nbsp;782 écroulements</strong>)&nbsp;; et ses repères d'abscisse étaient
+        décalés d'un bac — «&nbsp;1&nbsp;» était posé sous la colonne des grains qui n'écroulent rien.</p>
+      </div>
     </div>
   </div>
 
@@ -309,7 +341,8 @@ function dessinerHisto() {
   let maxLog = 0;
   for (let b = 0; b < 24; b++) if (bacs[b] > 0) maxLog = Math.max(maxLog, Math.log10(bacs[b] + 1));
   if (maxLog === 0) { ctxH.fillText("en attente de pluie…", 10, H/2); return; }
-  const nb = 18, larg = (W - 40) / nb;
+  const nb = 24, larg = (W - 40) / nb;   // 24 et non 18 : les plus grosses avalanches
+                                         // étaient comptées puis jamais dessinées (mesuré le 01/09)
   for (let b = 0; b < nb; b++) {
     if (bacs[b] <= 0) continue;
     const h = Math.log10(bacs[b] + 1) / maxLog * (H - 46);
@@ -317,10 +350,14 @@ function dessinerHisto() {
     ctxH.fillRect(24 + b * larg, H - 22 - h, Math.max(2, larg - 3), h);
   }
   ctxH.fillStyle = "#8a8678";
-  ctxH.fillText("1", 24, H - 8);
-  ctxH.fillText("2⁵", 24 + 5 * larg, H - 8);
-  ctxH.fillText("2¹⁰", 24 + 10 * larg, H - 8);
-  ctxH.fillText("2¹⁵", 24 + 15 * larg, H - 8);
+  // le bac b tient les tailles [2^(b-1), 2^b) ; le bac 0 tient les grains qui n'écroulent RIEN.
+  // Les repères d'avant étaient décalés d'un bac : « 1 » était posé sous les avalanches de taille zéro.
+  ctxH.fillText("0", 24, H - 8);
+  ctxH.fillText("1", 24 + 1 * larg, H - 8);
+  ctxH.fillText("2⁵", 24 + 6 * larg, H - 8);
+  ctxH.fillText("2¹⁰", 24 + 11 * larg, H - 8);
+  ctxH.fillText("2¹⁵", 24 + 16 * larg, H - 8);
+  ctxH.fillText("2²⁰", 24 + 21 * larg, H - 8);
 }
 
 /* ---- lecture & boutons ---- */
