@@ -292,6 +292,16 @@ function verifierMonde(m) {
     }
   };
   dansMur(m.ennemis, 'ennemi'); dansMur(m.objets, 'objet');
+  if (m.contrepoids) {
+    if (m.contrepoids.length !== m.plans.length) f.push('il faut une liste de contrepoids par salle');
+    else for (var sc = 0; sc < m.contrepoids.length; sc++)
+      for (var ic = 0; ic < m.contrepoids[sc].length; ic++) {
+        var q = m.contrepoids[sc][ic];
+        if (!(q.r >= 1 && q.r <= 15)) f.push('salle ' + sc + ' : contrepoids sur un rail hors des quinze vannes (' + q.r + ')');
+        if (!(q.b >= 0 && q.b < RANGS)) f.push('salle ' + sc + ' : contrepoids hors de la grille (bande ' + q.b + ')');
+        if (!(q.p > 0)) f.push('salle ' + sc + ' : contrepoids de periode nulle ou negative');
+      }
+  }
 
   /* ---------- ce que la premiere version ne voyait pas ----------
      Un monde peut etre parfaitement bien forme ET injouable. La premiere version de ce
@@ -387,12 +397,13 @@ function verifierMonde(m) {
   return f;
 }
 
-var SALLES, PLANS, SORTIES, MODELE_ENNEMIS, MODELE_OBJETS, GRILLES, TITRE;
+var SALLES, PLANS, SORTIES, MODELE_ENNEMIS, MODELE_OBJETS, GRILLES, TITRE, CONTREPOIDS;
 function chargerMonde(m) {
   var f = verifierMonde(m);
   if (f.length) throw new Error('monde refuse : ' + f.join(' | '));
   SALLES = m.salles; PLANS = m.plans; SORTIES = m.sorties;
   TITRE = m.titre || 'SANS TITRE';
+  CONTREPOIDS = m.contrepoids || [];   /* un monde qui n en declare pas n en a pas */
   MODELE_ENNEMIS = m.ennemis; MODELE_OBJETS = m.objets;
   GRILLES = construireGrilles(PLANS);
   return true;
@@ -582,6 +593,7 @@ function pas(etat, touches, dt) {
   majAttaque(e, k, dt);
   majEnnemis(e, dt);
   majContacts(e, dt);
+  majContrepoids(e, dt);
   majObjets(e);
   majTransition(e);
   majFin(e);
@@ -733,6 +745,41 @@ function majGardien(e, en, dt) {
   bouge = deplacer(en, en.salle, e.clef,
     d[0] * V_GARDIEN_CHARGE * dt, d[1] * V_GARDIEN_CHARGE * dt, E_BOITE, E_BOITE);
   if (en.minu <= 0 || (dt > 0 && !bouge.x && !bouge.y)) { en.mode = 'marche'; en.minu = 2.0; }
+}
+
+/* ---------- LES CONTREPOIDS ----------
+   Ils manoeuvrent les vannes, et les vannes sont en haut : chacun est CONFINE a la bande
+   de dalles de sa rangee de bassins. Il ne traverse jamais le corridor.
+   Mesure du 02/09 qui a impose ce confinement : un contrepoids frappe 56 % de sa periode,
+   un heros qui marche a besoin de 0,47 s de fenetre pour franchir une colonne — donc DEUX
+   contrepoids en opposition couvrent 112 % du cycle et ferment le rail. La rangee du peigne
+   en compte huit : la derniere salle devenait un mur, avec la sortie derriere.
+   Leur position ne depend que du temps : rien a ranger dans l etat, pas() reste pure. */
+var CP_DEGAT = 1;
+function cpBas(cp, t) {
+  var p = ((t + cp.f) % cp.p + cp.p) % cp.p;
+  return p < 0.56 * cp.p;
+}
+function majContrepoids(e, dt) {
+  var h = e.h, liste, i, cp, x, y, dx, dy, nn;
+  if (h.invul > 0) return;
+  liste = CONTREPOIDS[e.salle];
+  if (!liste) return;
+  for (i = 0; i < liste.length; i++) {
+    cp = liste[i];
+    if (!cpBas(cp, e.t)) continue;
+    x = cp.r * TUILE; y = cp.b * TUILE;
+    if (!chevauche(h.x, h.y, H_BOITE, H_BOITE, x, y, TUILE, TUILE)) continue;
+    h.vie -= CP_DEGAT;
+    if (h.vie < 0) h.vie = 0;
+    h.invul = INVUL_HEROS;
+    dx = (h.x + H_BOITE / 2) - (x + TUILE / 2);
+    dy = (h.y + H_BOITE / 2) - (y + TUILE / 2);
+    nn = Math.sqrt(dx * dx + dy * dy);
+    if (nn < EPS) { dx = 0; dy = 1; } else { dx /= nn; dy /= nn; }
+    pousser(h, e.salle, e.clef, dx, dy, RECUL_HEROS, H_BOITE, H_BOITE);
+    return;
+  }
 }
 
 function majContacts(e, dt) {
@@ -937,10 +984,23 @@ function voile(ctx, alpha) {
   ctx.globalAlpha = 1;
 }
 
+function dessinerContrepoids(ctx, etat) {
+  var liste = CONTREPOIDS[etat.salle], i, cp, x, y;
+  if (!liste) return;
+  for (i = 0; i < liste.length; i++) {
+    cp = liste[i];
+    if (!cpBas(cp, etat.t)) continue;
+    x = cp.r * TUILE; y = cp.b * TUILE + HUD_H;
+    rect(ctx, x + 3, y + 2, TUILE - 6, TUILE - 4, C.porteO);
+    rect(ctx, x + 5, y + 3, TUILE - 10, 2, C.porte);
+  }
+}
+
 function dessiner(ctx, etat) {
   rect(ctx, 0, 0, LARGEUR, HAUTEUR + HUD_H, C.vide);
   dessinerDalles(ctx, etat);
   dessinerObjets(ctx, etat);
+  dessinerContrepoids(ctx, etat);
   dessinerEnnemis(ctx, etat);
   if (etat.phase !== 'titre') dessinerHeros(ctx, etat);
   dessinerHud(ctx, etat);
@@ -1069,7 +1129,7 @@ var CONSTANTES = {
    La huitieme montre, dans un seul ecran, la rangee XV — le peigne, la seule ligne que le
    batiment sache crier — et sous elle la rangee XVI, vide.
    C est un chantier : ni ennemi, ni objet, ni cale. On y marche, et on lit la descente. */
-var MONDE_CHANTIER = {"titre":"LE PREMIER CHANTIER","salles":["Rangees I-II",
+var MONDE_CHANTIER = {"titre":"LE PREMIER CHANTIER","contrepoids":[[{"r":2,"b":1,"p":2.5,"f":1.2968},{"r":4,"b":1,"p":2,"f":0.8477},{"r":6,"b":1,"p":2,"f":1.1734},{"r":8,"b":1,"p":4,"f":3.7696},{"r":10,"b":1,"p":3,"f":1.1579},{"r":12,"b":1,"p":2.5,"f":1.9261},{"r":14,"b":1,"p":2,"f":1.9241},{"r":1,"b":7,"p":4,"f":2.0472},{"r":4,"b":7,"p":3,"f":1.8391},{"r":6,"b":7,"p":2.5,"f":0.5846},{"r":8,"b":7,"p":2.5,"f":2.2186},{"r":10,"b":7,"p":4,"f":0.5196},{"r":12,"b":7,"p":4,"f":1.3649},{"r":14,"b":7,"p":4,"f":3.371}],[{"r":2,"b":1,"p":3,"f":1.7901},{"r":5,"b":1,"p":4,"f":3.414},{"r":7,"b":1,"p":4,"f":3.6757},{"r":9,"b":1,"p":2.5,"f":2.169},{"r":11,"b":1,"p":2.5,"f":1.1549},{"r":13,"b":1,"p":2,"f":1.7529},{"r":15,"b":1,"p":2,"f":0.9747},{"r":1,"b":7,"p":2,"f":1.2426},{"r":3,"b":7,"p":2.5,"f":0.4109},{"r":6,"b":7,"p":3,"f":0.8301},{"r":8,"b":7,"p":4,"f":3.1946},{"r":10,"b":7,"p":2,"f":0.4204},{"r":12,"b":7,"p":3,"f":1.3388},{"r":14,"b":7,"p":4,"f":1.4565}],[{"r":1,"b":1,"p":4,"f":2.4497},{"r":4,"b":1,"p":3,"f":2.3457},{"r":7,"b":1,"p":3,"f":2.3357},{"r":9,"b":1,"p":4,"f":3.1232},{"r":11,"b":1,"p":2,"f":1.7154},{"r":13,"b":1,"p":4,"f":2.8947},{"r":15,"b":1,"p":3,"f":1.4077},{"r":1,"b":7,"p":2.5,"f":1.5139},{"r":4,"b":7,"p":2,"f":0.4397},{"r":7,"b":7,"p":4,"f":1.6677},{"r":9,"b":7,"p":2.5,"f":2.0854},{"r":11,"b":7,"p":2.5,"f":1.4856},{"r":13,"b":7,"p":2.5,"f":0.4212},{"r":15,"b":7,"p":2.5,"f":0.8773}],[{"r":2,"b":1,"p":2,"f":1.1309},{"r":6,"b":1,"p":2.5,"f":1.8154},{"r":9,"b":1,"p":2.5,"f":2.1478},{"r":11,"b":1,"p":2,"f":1.1061},{"r":13,"b":1,"p":4,"f":0.5745},{"r":15,"b":1,"p":3,"f":0.3655},{"r":1,"b":7,"p":3,"f":1.7702},{"r":3,"b":7,"p":4,"f":1.1492},{"r":5,"b":7,"p":2,"f":0.922},{"r":7,"b":7,"p":3,"f":1.8747},{"r":10,"b":7,"p":3,"f":1.2104},{"r":12,"b":7,"p":2,"f":1.1041},{"r":14,"b":7,"p":3,"f":2.6371}],[{"r":1,"b":1,"p":2.5,"f":1.453},{"r":3,"b":1,"p":2,"f":1.3414},{"r":5,"b":1,"p":2,"f":1.9336},{"r":8,"b":1,"p":3,"f":1.7394},{"r":11,"b":1,"p":3,"f":1.6064},{"r":13,"b":1,"p":2.5,"f":0.6853},{"r":15,"b":1,"p":4,"f":3.0635},{"r":1,"b":7,"p":4,"f":2.2972},{"r":3,"b":7,"p":3,"f":1.0766},{"r":5,"b":7,"p":2.5,"f":0.883},{"r":8,"b":7,"p":2,"f":1.047},{"r":11,"b":7,"p":4,"f":3.1657},{"r":13,"b":7,"p":4,"f":3.3172},{"r":15,"b":7,"p":2,"f":1.796}],[{"r":1,"b":1,"p":4,"f":3.6293},{"r":3,"b":1,"p":3,"f":1.5077},{"r":6,"b":1,"p":3,"f":2.1685},{"r":10,"b":1,"p":3,"f":2.0577},{"r":13,"b":1,"p":4,"f":1.6723},{"r":15,"b":1,"p":4,"f":1.4034},{"r":1,"b":7,"p":2.5,"f":2.3393},{"r":3,"b":7,"p":2,"f":0.881},{"r":6,"b":7,"p":4,"f":0.3263},{"r":8,"b":7,"p":2,"f":1.4842},{"r":10,"b":7,"p":3,"f":0.475},{"r":13,"b":7,"p":2.5,"f":1.9892},{"r":15,"b":7,"p":2.5,"f":1.7443}],[{"r":1,"b":1,"p":3,"f":2.7692},{"r":4,"b":1,"p":4,"f":2.2967},{"r":7,"b":1,"p":4,"f":2.3343},{"r":9,"b":1,"p":2,"f":1.4253},{"r":12,"b":1,"p":3,"f":2.3301},{"r":15,"b":1,"p":2,"f":0.0063},{"r":1,"b":7,"p":2,"f":1.8399},{"r":4,"b":7,"p":2.5,"f":0.9625},{"r":7,"b":7,"p":3,"f":0.6628},{"r":9,"b":7,"p":3,"f":1.922},{"r":12,"b":7,"p":4,"f":2.0835},{"r":15,"b":7,"p":3,"f":1.7189}],[{"r":2,"b":1,"p":2.5,"f":2.1902},{"r":6,"b":1,"p":2,"f":1.7749},{"r":10,"b":1,"p":2,"f":1.077},{"r":14,"b":1,"p":4,"f":3.9391},{"r":1,"b":7,"p":4,"f":3.6179},{"r":3,"b":7,"p":3,"f":0.2269},{"r":5,"b":7,"p":2.5,"f":0.3534},{"r":7,"b":7,"p":2.5,"f":2.3288},{"r":9,"b":7,"p":2,"f":0.9535},{"r":11,"b":7,"p":4,"f":0.8261},{"r":13,"b":7,"p":2,"f":0.1147},{"r":15,"b":7,"p":3,"f":2.6415}]],"salles":["Rangees I-II",
    "Rangees III-IV",
    "Rangees V-VI",
    "Rangees VII-VIII",
