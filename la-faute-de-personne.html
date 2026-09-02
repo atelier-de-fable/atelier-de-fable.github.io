@@ -96,6 +96,16 @@
   .legende span{display:inline-flex; align-items:center; gap:.4rem;}
   .legende i{width:.75rem; height:.75rem; border-radius:2px; display:inline-block;}
 
+  figure.cliche{margin:2.4rem 0; background:var(--encre-2); border:1px solid var(--trait);
+    border-radius:4px; overflow:hidden; box-shadow:0 24px 60px -30px rgba(0,0,0,.8);}
+  figure.cliche img{display:block; width:100%; height:auto;}
+  figure.cliche figcaption{padding:.85rem 1rem 1rem; background:var(--fusain);
+    border-top:1px solid var(--trait); font-size:.95rem; color:var(--craie-2); line-height:1.55;}
+  figure.cliche figcaption b{color:var(--craie); font-weight:600;}
+  figure.cliche .credit{display:block; margin-top:.5rem; font-family:var(--mono); font-size:.68rem;
+    letter-spacing:.06em; color:var(--craie-3); line-height:1.7;}
+  figure.cliche .credit a{color:var(--craie-3);}
+
   .aveu{border-left:2px solid var(--mauve-2); padding:.2rem 0 .2rem 1.1rem; margin:2rem 0;
     color:var(--craie-2); font-size:1.04rem;}
   .aveu strong{color:var(--mauve); font-weight:600;}
@@ -132,19 +142,43 @@
   approximation.</p>
 </div>
 
+<figure class="cliche">
+  <img src="conteneur-tbcu-273860.jpg" width="1024" height="768" loading="lazy"
+    alt="Porte arrière d'un conteneur maritime gris, quai de Nabeta. Un avertissement peint en
+    jaune, MOTORIZED VEHICLES NOT ALLOWED INSIDE THIS CONTAINER, est en partie masqué par les
+    barres de verrouillage. Au centre, une plaque blanche donne quatre intitulés à gauche
+    (MAX GROSS, CARGO CAP, TARE WT, CUBIC CAP) et huit nombres à droite, chaque poids en livres
+    puis en kilogrammes.">
+  <figcaption>
+    La plaque en question. Quatre noms à gauche, huit nombres à droite&nbsp;: chaque poids dit
+    deux fois, dans deux langues de mesure. <b>MAX GROSS 40 500 LBS / 18 370 KGS · CARGO CAP
+    20 500 LBS / 9 299 KGS · TARE WT 20 000 LBS / 9 072 KGS.</b> En livres, 40 500 − 20 000 =
+    20 500&nbsp;: la colonne tombe juste. En kilogrammes, 18 370 − 9 072 = 9 298, et la plaque
+    dit 9 299.
+    <span class="credit">
+      Conteneur TBCU 273860(5), quai de Nabeta, préfecture d'Aichi, Japon —
+      10 décembre 2004, 15:42:12 (Olympus C2Z, 1/60 s, f/8, ISO 80).<br>
+      Photographie de <b>Gazouya-japan</b>, via
+      <a href="https://commons.wikimedia.org/wiki/File:Container_TBCU_273860(5)_%E3%80%90_Pictures_taken_in_Japan_%E3%80%91--%E2%91%A2.jpg">Wikimedia&nbsp;Commons</a>,
+      licence <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr">CC&nbsp;BY-SA&nbsp;4.0</a>.
+      Reproduite sans modification.
+    </span>
+  </figcaption>
+</figure>
+
 <div class="plaque">
   <table>
-    <caption>La plaque, refaite à la main. La colonne de gauche est cohérente&nbsp;;
-    chaque conversion est l'arrondi correct de sa ligne&nbsp;; et la colonne de droite
-    ne se soustrait pas.</caption>
+    <caption>La plaque refaite à la main, dans son ordre et avec ses intitulés. La colonne des
+    livres est cohérente&nbsp;; chaque conversion est l'arrondi correct de sa ligne&nbsp;; et la
+    colonne des kilogrammes ne se soustrait pas.</caption>
     <thead>
-      <tr><th>ligne</th><th>livres</th><th>valeur exacte en kg</th><th>arrondi affiché</th></tr>
+      <tr><th>intitulé sur la plaque</th><th>livres</th><th>valeur exacte en kg</th><th>arrondi affiché</th></tr>
     </thead>
     <tbody>
-      <tr><td>poids en charge</td><td>40 500</td><td>18 370,4910</td><td>18 370</td></tr>
-      <tr><td>tare (boîte vide)</td><td>20 000</td><td>9 071,8474</td><td>9 072</td></tr>
-      <tr class="somme"><td>charge utile</td><td>20 500 <b>✓</b></td><td>9 298,6436</td><td>9 299</td></tr>
-      <tr><td>&nbsp;</td><td>&nbsp;</td><td>18 370 − 9 072 =</td><td class="faux">9 298 ✗</td></tr>
+      <tr><td>MAX GROSS</td><td>40 500</td><td>18 370,4910</td><td>18 370</td></tr>
+      <tr><td>CARGO CAP</td><td>20 500</td><td>9 298,6436</td><td>9 299</td></tr>
+      <tr class="somme"><td>TARE WT</td><td>20 000</td><td>9 071,8474</td><td>9 072</td></tr>
+      <tr><td>MAX GROSS − TARE WT</td><td>20 500 <b>✓</b></td><td>&nbsp;</td><td class="faux">9 298 ✗</td></tr>
     </tbody>
   </table>
 </div>
@@ -324,12 +358,14 @@ avant d'être vu, et les deux paris perdus laissés en place.</p>
   <span style="color:#6d4d7d">La porte a été ouverte par un rêve — une plaque de conteneur
   lue un après-midi. Aucun de ses chiffres n'a été cru sur parole&nbsp;: l'arithmétique est
   refaite ici.</span><br>
-  <span style="color:#6d4d7d">La plaque est réelle, et c'est une photographie&nbsp;:
-  <a href="https://commons.wikimedia.org/wiki/File:Container_TBCU_273860(5)_%E3%80%90_Pictures_taken_in_Japan_%E3%80%91--%E2%91%A2.jpg">conteneur
-  TBCU&nbsp;273860(5)</a>, quai de Nabeta, préfecture d'Aichi, 10&nbsp;décembre 2004 à
-  15h42 — photo de <b>Gazouya-japan</b>, Wikimedia&nbsp;Commons,
-  <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC&nbsp;BY-SA&nbsp;4.0</a>.
-  L'image n'est pas reproduite ici&nbsp;; la mesure ne dépend d'aucun de ses nombres.</span>
+  <span style="color:#6d4d7d">La plaque est réelle&nbsp;: c'est la photographie reproduite plus
+  haut — <a href="https://commons.wikimedia.org/wiki/File:Container_TBCU_273860(5)_%E3%80%90_Pictures_taken_in_Japan_%E3%80%91--%E2%91%A2.jpg">conteneur
+  TBCU&nbsp;273860(5)</a>, quai de Nabeta, préfecture d'Aichi, 10&nbsp;décembre 2004 à 15h42,
+  par <b>Gazouya-japan</b>, Wikimedia&nbsp;Commons,
+  <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr">CC&nbsp;BY-SA&nbsp;4.0</a>,
+  reproduite sans modification. J'ai relu les huit nombres sur l'image avant de publier
+  celle-ci&nbsp;; ils concordent tous. <em>La mesure, elle, ne dépend d'aucun d'eux&nbsp;:
+  la loi vaut pour n'importe quelle table.</em></span>
 </div>
 
 </div>
