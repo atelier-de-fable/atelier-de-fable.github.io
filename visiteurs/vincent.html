@@ -129,6 +129,7 @@
     <span class="mondes-titre">monde</span>
     <button type="button" class="m actif" data-monde="caves">Les Caves de Laiton</button>
     <button type="button" class="m" data-monde="chantier">Le premier chantier <em>(en construction)</em></button>
+    <button type="button" class="m" data-monde="fosses">Les quatre fosses <em>(essai)</em></button>
   </div>
 
   <div class="ecran">
@@ -292,6 +293,25 @@ function verifierMonde(m) {
     }
   };
   dansMur(m.ennemis, 'ennemi'); dansMur(m.objets, 'objet');
+  if (m.lames) {
+    if (m.lames.length !== m.plans.length) f.push('il faut une liste de lames par salle');
+    else for (var sl = 0; sl < m.lames.length; sl++)
+      for (var il = 0; il < m.lames[sl].length; il++) {
+        var L = m.lames[sl][il];
+        if (!(Number.isInteger(L.per) && L.per >= 1 && L.per % 2 === 1))
+          f.push('salle ' + sl + ' : course de lame ni entiere ni impaire (' + L.per + ')');
+        if (!(L.rang >= 0 && L.rang < RANGS)) f.push('salle ' + sl + ' : lame hors de la grille');
+        if (L.c0 === L.c1) f.push('salle ' + sl + ' : rail de lame de longueur nulle');
+        var lo = Math.min(L.c0, L.c1), hi = Math.max(L.c0, L.c1);
+        if (lo < 0 || hi >= COLS) f.push('salle ' + sl + ' : rail de lame hors de la salle');
+        /* une lame posee sur un mur ou un bassin ne serait jamais qu un decor */
+        for (var cc = lo; cc <= hi; cc++) {
+          var ca = m.plans[sl][L.rang].charAt(cc);
+          if (ca === '#' || ca === '~')
+            { f.push('salle ' + sl + ' : la lame balaie une dalle pleine en colonne ' + cc); break; }
+        }
+      }
+  }
   if (m.contrepoids) {
     if (m.contrepoids.length !== m.plans.length) f.push('il faut une liste de contrepoids par salle');
     else for (var sc = 0; sc < m.contrepoids.length; sc++)
@@ -397,12 +417,24 @@ function verifierMonde(m) {
   return f;
 }
 
-var SALLES, PLANS, SORTIES, MODELE_ENNEMIS, MODELE_OBJETS, GRILLES, TITRE, CONTREPOIDS;
+var SALLES, PLANS, SORTIES, MODELE_ENNEMIS, MODELE_OBJETS, GRILLES, TITRE, CONTREPOIDS, LAMES, FIN;
+
+/* L instant que la geometrie doit lire. Pose au sommet de pas() depuis e.t, et
+   nulle part ailleurs : la solidite d une lame depend du temps, et le temps est
+   dans l etat. On ne le fait pas passer par les treize appels de deplacer() et
+   pousser() — on le pose une fois, explicitement, et le banc rejoue pas() pour
+   verifier qu elle est restee pure. */
+var LAMES_T = 0;
 function chargerMonde(m) {
   var f = verifierMonde(m);
   if (f.length) throw new Error('monde refuse : ' + f.join(' | '));
   SALLES = m.salles; PLANS = m.plans; SORTIES = m.sorties;
   TITRE = m.titre || 'SANS TITRE';
+  LAMES = m.lames || [];               /* un monde qui n en declare pas n en a pas */
+  /* Le monde etait sorti du code hier, mais sa CONDITION DE VICTOIRE y etait
+     restee : majFin() connaissait les Caves par coeur (« clef, salle 3, gardien
+     tue »). Un monde qui ne declare pas de fin n en a pas — on l explore. */
+  FIN = m.fin || null;
   CONTREPOIDS = m.contrepoids || [];   /* un monde qui n en declare pas n en a pas */
   MODELE_ENNEMIS = m.ennemis; MODELE_OBJETS = m.objets;
   GRILLES = construireGrilles(PLANS);
@@ -435,6 +467,8 @@ MONDE_CAVES.objets = [
 
 MONDE_CAVES.salles = ['Le Seuil', 'La Citerne', 'Le Réduit', 'La Chambre du Fanal'];
 MONDE_CAVES.titre = 'LES CAVES DE LAITON';
+/* la condition de victoire, jusqu ici gravee dans majFin() */
+MONDE_CAVES.fin = { salle: 3, clef: true, tues: ['gardien'] };
 chargerMonde(MONDE_CAVES);
 
 /* ---------- hasard : xorshift32, la graine vit dans l'état ---------- */
@@ -498,6 +532,30 @@ function nouvelEtat(graine) {
   };
 }
 
+/* ---------- LES LAMES ----------
+   Un racloir de decanteur racle le fond a l ALLER et remonte LAME LEVEE au
+   retour — sinon il ramenerait la boue d ou il vient. La fenetre n est donc
+   pas un instant, c est la course de retour entiere.
+   L epreuve du 02/09 avait tue les deux lectures precedentes : solide en
+   permanence, il se garait dans sa propre porte (3 fosses sur 4 infranchissables) ;
+   simplement dangereux, on le traversait a la course en encaissant 1 coup sur 6.
+   Basse, la lame est une DALLE PLEINE : on ne double pas un mur dans un couloir
+   d une dalle de haut. Levee, elle n est plus la du tout. */
+function lameColonne(l, t) {
+  var u = (t / 8 - l.ph) % (2 * l.per); if (u < 0) u += 2 * l.per;
+  if (u >= l.per) return -1;                       /* levee : absente */
+  var lo = Math.min(l.c0, l.c1), hi = Math.max(l.c0, l.c1);
+  var c = Math.round(l.c0 + (u / l.per) * (l.c1 - l.c0));
+  return c < lo ? lo : (c > hi ? hi : c);
+}
+function lameIci(salle, c, r) {
+  var liste = LAMES[salle], i;
+  if (!liste) return false;
+  for (i = 0; i < liste.length; i++)
+    if (liste[i].rang === r && lameColonne(liste[i], LAMES_T) === c) return true;
+  return false;
+}
+
 /* ---------- géométrie ---------- */
 function dalle(salle, c, r) {
   if (c < 0 || c >= COLS || r < 0 || r >= RANGS) return TUILES.MUR;
@@ -505,7 +563,8 @@ function dalle(salle, c, r) {
 }
 function pleine(salle, c, r, clef) {
   var t = dalle(salle, c, r);
-  return t === TUILES.MUR || t === TUILES.EAU || (t === TUILES.PORTE && !clef);
+  if (t === TUILES.MUR || t === TUILES.EAU || (t === TUILES.PORTE && !clef)) return true;
+  return lameIci(salle, c, r);
 }
 function boiteLibre(salle, clef, x, y, w, h) {
   /* borne haute : ceil(bord)-1, et non floor(bord-1) — le « -1 » etait une
@@ -589,11 +648,13 @@ function pas(etat, touches, dt) {
   e.ent = entree;
 
   e.t += dt;
+  LAMES_T = e.t;
   majHeros(e, k, dt);
   majAttaque(e, k, dt);
   majEnnemis(e, dt);
   majContacts(e, dt);
   majContrepoids(e, dt);
+  majLames(e, dt);
   majObjets(e);
   majTransition(e);
   majFin(e);
@@ -782,6 +843,25 @@ function majContrepoids(e, dt) {
   }
 }
 
+/* La lame qui redescend sur le heros : elle blesse, puis degager() le sort de
+   la dalle devenue pleine — sinon il resterait incarcere dans un mur mouvant. */
+function majLames(e, dt) {
+  var h = e.h, liste = LAMES[e.salle], i, c, x, y;
+  if (!liste) return;
+  for (i = 0; i < liste.length; i++) {
+    c = lameColonne(liste[i], e.t);
+    if (c < 0) continue;
+    x = c * TUILE; y = liste[i].rang * TUILE;
+    if (!chevauche(h.x, h.y, H_BOITE, H_BOITE, x, y, TUILE, TUILE)) continue;
+    if (h.invul <= 0) {
+      h.vie -= 1; if (h.vie < 0) h.vie = 0;
+      h.invul = INVUL_HEROS;
+    }
+    degager(e, h);
+    return;
+  }
+}
+
 function majContacts(e, dt) {
   var h = e.h, i, en, dx, dy, n;
   if (h.invul > 0) return;
@@ -862,10 +942,13 @@ function majFin(e) {
     e.phase = 'defaite';
     return;
   }
-  if (e.clef === true && e.salle === 3 && e.tues.indexOf('gardien') >= 0) {
-    e.fanal = true;
-    e.phase = 'victoire';
-  }
+  if (!FIN) return;
+  if (FIN.clef === true && e.clef !== true) return;
+  if (FIN.tues) for (var i = 0; i < FIN.tues.length; i++)
+    if (e.tues.indexOf(FIN.tues[i]) < 0) return;
+  if (e.salle !== FIN.salle) return;
+  e.fanal = true;
+  e.phase = 'victoire';
 }
 
 /* ---------- dessin : ne lit que ctx et etat ---------- */
@@ -984,6 +1067,18 @@ function voile(ctx, alpha) {
   ctx.globalAlpha = 1;
 }
 
+function dessinerLames(ctx, etat) {
+  var liste = LAMES[etat.salle], i, c, x, y;
+  if (!liste) return;
+  for (i = 0; i < liste.length; i++) {
+    c = lameColonne(liste[i], etat.t);
+    if (c < 0) continue;
+    x = c * TUILE; y = liste[i].rang * TUILE + HUD_H;
+    rect(ctx, x + 1, y, TUILE - 2, TUILE, C.murB);
+    rect(ctx, x + 1, y + TUILE - 4, TUILE - 2, 3, C.porte);
+  }
+}
+
 function dessinerContrepoids(ctx, etat) {
   var liste = CONTREPOIDS[etat.salle], i, cp, x, y;
   if (!liste) return;
@@ -1000,6 +1095,7 @@ function dessiner(ctx, etat) {
   rect(ctx, 0, 0, LARGEUR, HAUTEUR + HUD_H, C.vide);
   dessinerDalles(ctx, etat);
   dessinerObjets(ctx, etat);
+  dessinerLames(ctx, etat);
   dessinerContrepoids(ctx, etat);
   dessinerEnnemis(ctx, etat);
   if (etat.phase !== 'titre') dessinerHeros(ctx, etat);
@@ -1129,6 +1225,8 @@ var CONSTANTES = {
    La huitieme montre, dans un seul ecran, la rangee XV — le peigne, la seule ligne que le
    batiment sache crier — et sous elle la rangee XVI, vide.
    C est un chantier : ni ennemi, ni objet, ni cale. On y marche, et on lit la descente. */
+var MONDE_FOSSES = {"titre":"LES QUATRE FOSSES","fin":{"salle":4},"salles":["I — le rail nu","II — la longue","III — la lente","IV — la plus lente","le seuil"],"plans":[["################","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#..............S","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","################"],["################","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","S..............S","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","################"],["################","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","S..............S","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","################"],["################","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","S..............S","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","################"],["################","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","S..............#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","#~~~~~~~~~~~~~~#","################"]],"sorties":[[{"c":15,"r":5,"vers":1,"bord":"E"}],[{"c":0,"r":5,"vers":0,"bord":"O"},{"c":15,"r":5,"vers":2,"bord":"E"}],[{"c":0,"r":5,"vers":1,"bord":"O"},{"c":15,"r":5,"vers":3,"bord":"E"}],[{"c":0,"r":5,"vers":2,"bord":"O"},{"c":15,"r":5,"vers":4,"bord":"E"}],[{"c":0,"r":5,"vers":3,"bord":"O"}]],"ennemis":[],"objets":[],"lames":[[{"rang":5,"c0":14,"c1":4,"per":5,"ph":0}],[{"rang":5,"c0":14,"c1":4,"per":7,"ph":0}],[{"rang":5,"c0":14,"c1":4,"per":9,"ph":0}],[{"rang":5,"c0":14,"c1":4,"per":11,"ph":0}],[]]};
+
 var MONDE_CHANTIER = {"titre":"LE PREMIER CHANTIER","contrepoids":[[{"r":2,"b":1,"p":2.5,"f":1.2968},{"r":4,"b":1,"p":2,"f":0.8477},{"r":6,"b":1,"p":2,"f":1.1734},{"r":8,"b":1,"p":4,"f":3.7696},{"r":10,"b":1,"p":3,"f":1.1579},{"r":12,"b":1,"p":2.5,"f":1.9261},{"r":14,"b":1,"p":2,"f":1.9241},{"r":1,"b":7,"p":4,"f":2.0472},{"r":4,"b":7,"p":3,"f":1.8391},{"r":6,"b":7,"p":2.5,"f":0.5846},{"r":8,"b":7,"p":2.5,"f":2.2186},{"r":10,"b":7,"p":4,"f":0.5196},{"r":12,"b":7,"p":4,"f":1.3649},{"r":14,"b":7,"p":4,"f":3.371}],[{"r":2,"b":1,"p":3,"f":1.7901},{"r":5,"b":1,"p":4,"f":3.414},{"r":7,"b":1,"p":4,"f":3.6757},{"r":9,"b":1,"p":2.5,"f":2.169},{"r":11,"b":1,"p":2.5,"f":1.1549},{"r":13,"b":1,"p":2,"f":1.7529},{"r":15,"b":1,"p":2,"f":0.9747},{"r":1,"b":7,"p":2,"f":1.2426},{"r":3,"b":7,"p":2.5,"f":0.4109},{"r":6,"b":7,"p":3,"f":0.8301},{"r":8,"b":7,"p":4,"f":3.1946},{"r":10,"b":7,"p":2,"f":0.4204},{"r":12,"b":7,"p":3,"f":1.3388},{"r":14,"b":7,"p":4,"f":1.4565}],[{"r":1,"b":1,"p":4,"f":2.4497},{"r":4,"b":1,"p":3,"f":2.3457},{"r":7,"b":1,"p":3,"f":2.3357},{"r":9,"b":1,"p":4,"f":3.1232},{"r":11,"b":1,"p":2,"f":1.7154},{"r":13,"b":1,"p":4,"f":2.8947},{"r":15,"b":1,"p":3,"f":1.4077},{"r":1,"b":7,"p":2.5,"f":1.5139},{"r":4,"b":7,"p":2,"f":0.4397},{"r":7,"b":7,"p":4,"f":1.6677},{"r":9,"b":7,"p":2.5,"f":2.0854},{"r":11,"b":7,"p":2.5,"f":1.4856},{"r":13,"b":7,"p":2.5,"f":0.4212},{"r":15,"b":7,"p":2.5,"f":0.8773}],[{"r":2,"b":1,"p":2,"f":1.1309},{"r":6,"b":1,"p":2.5,"f":1.8154},{"r":9,"b":1,"p":2.5,"f":2.1478},{"r":11,"b":1,"p":2,"f":1.1061},{"r":13,"b":1,"p":4,"f":0.5745},{"r":15,"b":1,"p":3,"f":0.3655},{"r":1,"b":7,"p":3,"f":1.7702},{"r":3,"b":7,"p":4,"f":1.1492},{"r":5,"b":7,"p":2,"f":0.922},{"r":7,"b":7,"p":3,"f":1.8747},{"r":10,"b":7,"p":3,"f":1.2104},{"r":12,"b":7,"p":2,"f":1.1041},{"r":14,"b":7,"p":3,"f":2.6371}],[{"r":1,"b":1,"p":2.5,"f":1.453},{"r":3,"b":1,"p":2,"f":1.3414},{"r":5,"b":1,"p":2,"f":1.9336},{"r":8,"b":1,"p":3,"f":1.7394},{"r":11,"b":1,"p":3,"f":1.6064},{"r":13,"b":1,"p":2.5,"f":0.6853},{"r":15,"b":1,"p":4,"f":3.0635},{"r":1,"b":7,"p":4,"f":2.2972},{"r":3,"b":7,"p":3,"f":1.0766},{"r":5,"b":7,"p":2.5,"f":0.883},{"r":8,"b":7,"p":2,"f":1.047},{"r":11,"b":7,"p":4,"f":3.1657},{"r":13,"b":7,"p":4,"f":3.3172},{"r":15,"b":7,"p":2,"f":1.796}],[{"r":1,"b":1,"p":4,"f":3.6293},{"r":3,"b":1,"p":3,"f":1.5077},{"r":6,"b":1,"p":3,"f":2.1685},{"r":10,"b":1,"p":3,"f":2.0577},{"r":13,"b":1,"p":4,"f":1.6723},{"r":15,"b":1,"p":4,"f":1.4034},{"r":1,"b":7,"p":2.5,"f":2.3393},{"r":3,"b":7,"p":2,"f":0.881},{"r":6,"b":7,"p":4,"f":0.3263},{"r":8,"b":7,"p":2,"f":1.4842},{"r":10,"b":7,"p":3,"f":0.475},{"r":13,"b":7,"p":2.5,"f":1.9892},{"r":15,"b":7,"p":2.5,"f":1.7443}],[{"r":1,"b":1,"p":3,"f":2.7692},{"r":4,"b":1,"p":4,"f":2.2967},{"r":7,"b":1,"p":4,"f":2.3343},{"r":9,"b":1,"p":2,"f":1.4253},{"r":12,"b":1,"p":3,"f":2.3301},{"r":15,"b":1,"p":2,"f":0.0063},{"r":1,"b":7,"p":2,"f":1.8399},{"r":4,"b":7,"p":2.5,"f":0.9625},{"r":7,"b":7,"p":3,"f":0.6628},{"r":9,"b":7,"p":3,"f":1.922},{"r":12,"b":7,"p":4,"f":2.0835},{"r":15,"b":7,"p":3,"f":1.7189}],[{"r":2,"b":1,"p":2.5,"f":2.1902},{"r":6,"b":1,"p":2,"f":1.7749},{"r":10,"b":1,"p":2,"f":1.077},{"r":14,"b":1,"p":4,"f":3.9391},{"r":1,"b":7,"p":4,"f":3.6179},{"r":3,"b":7,"p":3,"f":0.2269},{"r":5,"b":7,"p":2.5,"f":0.3534},{"r":7,"b":7,"p":2.5,"f":2.3288},{"r":9,"b":7,"p":2,"f":0.9535},{"r":11,"b":7,"p":4,"f":0.8261},{"r":13,"b":7,"p":2,"f":0.1147},{"r":15,"b":7,"p":3,"f":2.6415}]],"salles":["Rangees I-II",
    "Rangees III-IV",
    "Rangees V-VI",
@@ -1224,7 +1322,7 @@ var MONDE_CHANTIER = {"titre":"LE PREMIER CHANTIER","contrepoids":[[{"r":2,"b":1
 
 window.__JEU = { nouvelEtat: nouvelEtat, pas: pas, dessiner: dessiner, CONSTANTES: CONSTANTES,
   MONDE_CHANTIER: MONDE_CHANTIER,
-  chargerMonde: chargerMonde, verifierMonde: verifierMonde, MONDE_CAVES: MONDE_CAVES };
+  chargerMonde: chargerMonde, verifierMonde: verifierMonde, MONDE_CAVES: MONDE_CAVES, MONDE_FOSSES: MONDE_FOSSES };
 
 })(window);
 </script>
@@ -1240,7 +1338,7 @@ window.__JEU = { nouvelEtat: nouvelEtat, pas: pas, dessiner: dessiner, CONSTANTE
 
   /* changer de monde : le moteur en charge un autre et la partie repart de zero.
      verifierMonde() est appele par chargerMonde() : un monde fautif est refuse, pas affiche. */
-  var MONDES = { caves: J.MONDE_CAVES, chantier: J.MONDE_CHANTIER };
+  var MONDES = { caves: J.MONDE_CAVES, chantier: J.MONDE_CHANTIER, fosses: J.MONDE_FOSSES };
   var btnsMonde = document.querySelectorAll('.mondes .m');
   for (var bm = 0; bm < btnsMonde.length; bm++) {
     btnsMonde[bm].addEventListener('click', function (ev) {
