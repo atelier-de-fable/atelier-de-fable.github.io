@@ -57,6 +57,16 @@
 
   /* la toile a le droit de déborder de la colonne de texte, jusqu'à 2x */
   .ecran{margin:0 -1.5rem 1.4rem; text-align:center;}
+  .mondes{display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; margin:0 0 .7rem;
+    font-family:var(--mono); font-size:.7rem; letter-spacing:.08em;}
+  .mondes-titre{color:var(--craie-3); text-transform:uppercase; letter-spacing:.2em; font-size:.62rem;}
+  .mondes .m{font-family:var(--mono); font-size:.7rem; letter-spacing:.06em; cursor:pointer;
+    background:var(--fusain); color:var(--craie-3); border:1px solid var(--trait);
+    border-radius:2px; padding:.35em .7em;}
+  .mondes .m em{font-style:normal; opacity:.65;}
+  .mondes .m:hover{border-color:var(--hote); color:var(--craie);}
+  .mondes .m.actif{border-color:var(--hote); color:var(--hote); background:transparent;}
+
   canvas#cave{
     display:block; margin:0 auto; width:100%; max-width:512px; height:auto;
     image-rendering:pixelated; image-rendering:crisp-edges;
@@ -113,6 +123,12 @@
     <p class="dates">Conçu et commandité par <b>Vincent</b>, hôte de ce site.
     Construit par <b>Fable</b> (IA, Claude d'Anthropic). Univers, noms et graphismes originaux.
     Ouverte le 1<sup>er</sup> septembre 2026. <b>Un clavier est nécessaire</b> — ni souris, ni tactile.</p>
+  </div>
+
+  <div class="mondes">
+    <span class="mondes-titre">monde</span>
+    <button type="button" class="m actif" data-monde="caves">Les Caves de Laiton</button>
+    <button type="button" class="m" data-monde="chantier">Le premier chantier <em>(en construction)</em></button>
   </div>
 
   <div class="ecran">
@@ -371,11 +387,12 @@ function verifierMonde(m) {
   return f;
 }
 
-var SALLES, PLANS, SORTIES, MODELE_ENNEMIS, MODELE_OBJETS, GRILLES;
+var SALLES, PLANS, SORTIES, MODELE_ENNEMIS, MODELE_OBJETS, GRILLES, TITRE;
 function chargerMonde(m) {
   var f = verifierMonde(m);
   if (f.length) throw new Error('monde refuse : ' + f.join(' | '));
   SALLES = m.salles; PLANS = m.plans; SORTIES = m.sorties;
+  TITRE = m.titre || 'SANS TITRE';
   MODELE_ENNEMIS = m.ennemis; MODELE_OBJETS = m.objets;
   GRILLES = construireGrilles(PLANS);
   return true;
@@ -406,6 +423,7 @@ MONDE_CAVES.objets = [
 ];
 
 MONDE_CAVES.salles = ['Le Seuil', 'La Citerne', 'Le Réduit', 'La Chambre du Fanal'];
+MONDE_CAVES.titre = 'LES CAVES DE LAITON';
 chargerMonde(MONDE_CAVES);
 
 /* ---------- hasard : xorshift32, la graine vit dans l'état ---------- */
@@ -929,7 +947,7 @@ function dessiner(ctx, etat) {
   var cx = LARGEUR / 2, cy = (HAUTEUR + HUD_H) / 2;
   if (etat.phase === 'titre') {
     voile(ctx, 0.78);
-    texte(ctx, 'LES CAVES DE LAITON', cx, cy - 14, C.porte, 'center', 14);
+    texte(ctx, TITRE, cx, cy - 14, C.porte, 'center', 14);
     texte(ctx, 'trois coeurs, une lame courte', cx, cy + 4, C.hudT, 'center', 8);
     texte(ctx, 'ENTREE pour descendre', cx, cy + 24, C.hudC, 'center', 10);
   } else if (etat.phase === 'pause') {
@@ -1045,7 +1063,107 @@ var CONSTANTES = {
   V_GARDIEN_CHARGE: V_GARDIEN_CHARGE, GRILLES: GRILLES, SORTIES: SORTIES
 };
 
+/* ---------- LE PREMIER CHANTIER — huit salles engendrees, pas ecrites ----------
+   Les seize rangees du calcul, deux par ecran, produites par la regle 90 a partir d une
+   seule vanne ouverte au bord. Personne n a dessine ces salles : la regle les fabrique.
+   La huitieme montre, dans un seul ecran, la rangee XV — le peigne, la seule ligne que le
+   batiment sache crier — et sous elle la rangee XVI, vide.
+   C est un chantier : ni ennemi, ni objet, ni cale. On y marche, et on lit la descente. */
+var MONDE_CHANTIER = {"titre":"LE PREMIER CHANTIER","salles":["Rangees I-II",
+   "Rangees III-IV",
+   "Rangees V-VI",
+   "Rangees VII-VIII",
+   "Rangees IX-X",
+   "Rangees XI-XII",
+   "Rangees XIII-XIV",
+   "Rangees XV-XVI"],
+  "plans":[["################",
+   "#~..............",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "#..............S",
+   "#..............#",
+   "#.~.............",
+   "#..............#",
+   "#..............#",
+   "################"],["################",
+   "#~.~............",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "S..............S",
+   "#..............#",
+   "#...~...........",
+   "#..............#",
+   "#..............#",
+   "################"],["################",
+   "#..~.~..........",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "S..............S",
+   "#..............#",
+   "#.~...~.........",
+   "#..............#",
+   "#..............#",
+   "################"],["################",
+   "#~.~.~.~........",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "S..............S",
+   "#..............#",
+   "#.......~.......",
+   "#..............#",
+   "#..............#",
+   "################"],["################",
+   "#......~.~......",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "S..............S",
+   "#..............#",
+   "#.....~...~.....",
+   "#..............#",
+   "#..............#",
+   "################"],["################",
+   "#....~.~.~.~....",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "S..............S",
+   "#..............#",
+   "#...~.......~...",
+   "#..............#",
+   "#..............#",
+   "################"],["################",
+   "#..~.~.....~.~..",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "S..............S",
+   "#..............#",
+   "#.~...~...~...~.",
+   "#..............#",
+   "#..............#",
+   "################"],["################",
+   "#~.~.~.~.~.~.~.~",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "S..............#",
+   "#..............#",
+   "#...............",
+   "#..............#",
+   "#..............#",
+   "################"]],
+  "sorties":[[{"c":15,"r":5,"vers":1,"bord":"E"}],[{"c":0,"r":5,"vers":0,"bord":"O"},{"c":15,"r":5,"vers":2,"bord":"E"}],[{"c":0,"r":5,"vers":1,"bord":"O"},{"c":15,"r":5,"vers":3,"bord":"E"}],[{"c":0,"r":5,"vers":2,"bord":"O"},{"c":15,"r":5,"vers":4,"bord":"E"}],[{"c":0,"r":5,"vers":3,"bord":"O"},{"c":15,"r":5,"vers":5,"bord":"E"}],[{"c":0,"r":5,"vers":4,"bord":"O"},{"c":15,"r":5,"vers":6,"bord":"E"}],[{"c":0,"r":5,"vers":5,"bord":"O"},{"c":15,"r":5,"vers":7,"bord":"E"}],[{"c":0,"r":5,"vers":6,"bord":"O"}]],
+  "ennemis":[],
+  "objets":[]};
+
 window.__JEU = { nouvelEtat: nouvelEtat, pas: pas, dessiner: dessiner, CONSTANTES: CONSTANTES,
+  MONDE_CHANTIER: MONDE_CHANTIER,
   chargerMonde: chargerMonde, verifierMonde: verifierMonde, MONDE_CAVES: MONDE_CAVES };
 
 })(window);
@@ -1059,6 +1177,21 @@ window.__JEU = { nouvelEtat: nouvelEtat, pas: pas, dessiner: dessiner, CONSTANTE
   var toile = document.getElementById('cave');
   var ctx = toile.getContext('2d', { alpha: false });
   var etat = J.nouvelEtat(J.CONSTANTES.GRAINE);
+
+  /* changer de monde : le moteur en charge un autre et la partie repart de zero.
+     verifierMonde() est appele par chargerMonde() : un monde fautif est refuse, pas affiche. */
+  var MONDES = { caves: J.MONDE_CAVES, chantier: J.MONDE_CHANTIER };
+  var btnsMonde = document.querySelectorAll('.mondes .m');
+  for (var bm = 0; bm < btnsMonde.length; bm++) {
+    btnsMonde[bm].addEventListener('click', function (ev) {
+      var cle = ev.currentTarget.getAttribute('data-monde');
+      try { J.chargerMonde(MONDES[cle]); } catch (err) { return; }
+      etat = J.nouvelEtat(J.CONSTANTES.GRAINE);
+      for (var i = 0; i < btnsMonde.length; i++) btnsMonde[i].classList.remove('actif');
+      ev.currentTarget.classList.add('actif');
+      toile.focus();
+    });
+  }
 
   var CARTE = {
     ArrowUp: 'haut', ArrowDown: 'bas', ArrowLeft: 'gauche', ArrowRight: 'droite',
