@@ -19,6 +19,12 @@ import {
   loiPlusLongueSerie, MA_SUITE,
 } from './hasard.mjs';
 
+// Garde ajoutée le 3/09 à 22h10 : ce fichier exportait ses fonctions mais imprimait
+// son rapport entier dès qu'on l'importait. Un module qui exécute son rapport à
+// l'import n'est pas un module, c'est un script. Découvert en l'important depuis
+// outils/rang.mjs. Le rapport est inchangé quand on le lance directement.
+const RAPPORT = !!process.argv[1]?.endsWith('menteuse.mjs');
+
 const f1 = (x) => x.toFixed(1);
 const f3 = (x) => x.toFixed(3);
 const moy = (a) => a.reduce((x, y) => x + y, 0) / a.length;
@@ -75,8 +81,8 @@ function gagne(v, rnd) {
 }
 
 // ═══════════════════════════════════ 1 ═══════════════════════════════════
+if (RAPPORT) {
 titre('1 · ELLE PASSE — la grille publiée de la salle XVI, avec la menteuse dedans');
-{
   const n = 1000, BLOCS = 10, PAR_BLOC = 10000;
   const objets = [
     ['pièce juste',            (r, m) => pieceJuste(r, m)],
@@ -103,8 +109,8 @@ titre('1 · ELLE PASSE — la grille publiée de la salle XVI, avec la menteuse 
   console.log('\n→ le rapport du U ne sépare RIEN : les barres se recouvrent toutes.');
 }
 
+if (RAPPORT) {
 titre('2 · LES AUTRES INSTRUMENTS DE LA GRILLE, À 200 BITS (100 000 suites)');
-{
   const loi = loiPlusLongueSerie(200);
   const cols = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
   console.log('objet          | alternance | symétrie | série moy. |' + cols.map((L) => String(L).padStart(5)).join(''));
@@ -124,8 +130,8 @@ titre('2 · LES AUTRES INSTRUMENTS DE LA GRILLE, À 200 BITS (100 000 suites)');
   console.log('\n→ k=8 rend même la MOYENNE de la plus longue série (7,89 contre 7,98).');
 }
 
+if (RAPPORT) {
 titre('3 · LE TEST DES TRIPLETS — et pourquoi son seuil de manuel est faux');
-{
   const rnd = mulberry32(555);
   const K = [];
   for (let i = 0; i < 200000; i++) K.push(khi2Triplets(pieceJuste(rnd, 200)));
@@ -150,8 +156,8 @@ titre('3 · LE TEST DES TRIPLETS — et pourquoi son seuil de manuel est faux');
   console.log('\n→ les menteuses rejettent MOINS souvent que la vraie pièce : aveuglement complet.');
 }
 
+if (RAPPORT) {
 titre('4 · OÙ ELLE FUIT — et ma préinscription disait « seule fuite », ce qui est faux');
-{
   const b = menteuse(mulberry32(4242), 100000, 0.10, 3);
   console.log('menteuse k=3, 100 000 bits. Loi trouvée APRÈS coup : corrélation (−2e)^m à la distance 3m.');
   console.log('  lag |        z | corrélation | (−0,2)^m attendu');
@@ -165,8 +171,8 @@ titre('4 · OÙ ELLE FUIT — et ma préinscription disait « seule fuite », ce
   console.log('  RIEN ne fuit AVANT la distance k. Tous les blocs de longueur ≤ k sont parfaits.');
 }
 
+if (RAPPORT) {
 titre('5 · LE JEU DE LA SALLE XVI EST-IL ENCORE GAGNABLE ? (20 000 parties, 200 bits)');
-{
   console.log('1 menteuse + 3 vraies pièces. Le visiteur choisit une suite. Hasard pur : 25,0 %.');
   console.log('Les ex aequo sont départagés AU SORT — les compter perdants accuserait à tort.\n');
   console.log('  k | plus longue série | balayage 1…12 | balayage 1…50 | balayage 1…99');
@@ -202,8 +208,8 @@ titre('5 · LE JEU DE LA SALLE XVI EST-IL ENCORE GAGNABLE ? (20 000 parties, 200
   console.log('   car le jeu publié attrape toujours ma main.)');
 }
 
+if (RAPPORT) {
 titre('6 · LE COÛT DE NE PAS SAVOIR OÙ REGARDER (20 000 essais, 200 bits)');
-{
   console.log('  k | paires disponibles | connaît k | balaye 1…99 et corrige');
   console.log('-'.repeat(78));
   for (const k of [3, 8, 20, 50, 80]) {
@@ -224,8 +230,8 @@ titre('6 · LE COÛT DE NE PAS SAVOIR OÙ REGARDER (20 000 essais, 200 bits)');
   console.log('→ savoir OÙ regarder vaut deux fois et demie regarder partout.');
 }
 
+if (RAPPORT) {
 titre('7 · LA THÈSE — pour tout k, une menteuse invisible à tous les blocs ≤ k');
-{
   console.log('  k | série médiane (200 bits) | alternance | symétrie | 1er lag qui fuit');
   console.log('-'.repeat(78));
   for (const k of [2, 3, 4, 5, 6, 8, 12, 20]) {
@@ -241,8 +247,8 @@ titre('7 · LA THÈSE — pour tout k, une menteuse invisible à tous les blocs 
   console.log('\n(vraie pièce : médiane 8, alternance 0,500, symétrie 0,500)');
 }
 
+if (RAPPORT) {
 titre('8 · CONTRÔLE · MA MAIN N\'EST PAS UNE MENTEUSE D\'ORDRE FINI');
-{
   console.log('Je prédisais : « lag-3 ne dira rien de particulier sur ma suite du 17h46 ».');
   console.log('Prédiction tombée. Seuil corrigé pour 12 tests : |z| > 3,02.\n');
   let s = 0;
@@ -258,7 +264,12 @@ titre('8 · CONTRÔLE · MA MAIN N\'EST PAS UNE MENTEUSE D\'ORDRE FINI');
   console.log('  Ma main n\'a pas UN défaut à une distance : elle en a partout à la fois.');
   console.log('  Contrôle : lag-1 (' + f3(zLag(MA_SUITE, 1)) + ') et le taux d\'alternance (' +
     f3(alt(MA_SUITE)) + ')');
-  console.log('  donnent la même chose — (1−2×0,663)×√199 = ' + f3((1 - 2 * alt(MA_SUITE)) * Math.sqrt(199)) +
-    '. Ce ne sont pas');
-  console.log('  deux instruments de la grille, c\'est un seul écrit deux fois.');
+  console.log('  donnent la même chose — (1−2×0,663)×√199 = ' + f3((1 - 2 * alt(MA_SUITE)) * Math.sqrt(199)) + '.');
+  console.log('\n  ⚠ CORRIGÉ LE 3/09 À 22h30 par outils/rang.mjs. Ce banc écrivait ici : « ce ne');
+  console.log('  sont pas deux instruments de la grille, c\'est un seul écrit deux fois ». C\'est');
+  console.log('  FAUX, et l\'erreur est d\'avoir conclu à une identité depuis UN SEUL point.');
+  console.log('  Sur 200 000 vraies pièces, r(alternance, lag-1) = −0,99498, pas −1 : le lag-1');
+  console.log('  de Pearson est CENTRÉ par la moyenne, donc il dépend aussi du nombre de piles.');
+  console.log('  C\'est le lag-1 NON centré qui vaut exactement 1−2·alternance (r = −1,000000).');
+  console.log('  Les deux colonnes rendent des verdicts différents sur 0,61 % des vraies pièces.');
 }
