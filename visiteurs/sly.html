@@ -353,7 +353,13 @@
     { nom:'locrien',           court:'loc',   i:[0,1,3,5,6,8,10] },
     { nom:'mineur 7 (accord)', court:'m7',    i:[0,3,7,10] },
     { nom:'majeur 7 (accord)', court:'M7',    i:[0,4,7,11] },
-    { nom:'diminué (accord)',  court:'dim',   i:[0,3,6,9] }
+    { nom:'diminué (accord)',  court:'dim',   i:[0,3,6,9] },
+    /* La treizième case n'est pas un mode : c'est le jeu de notes de la famille
+       Tension, {0,1,3,6,7}, qui porte à la fois la quinte diminuée ET la quinte
+       juste. Aucune des douze autres ne le contient — vérifié, pas supposé. Ce
+       frottement est ce qui fait sonner Tension comme elle sonne ; il fallait
+       donc lui donner sa place sur la roue plutôt que de la ranger de force. */
+    { nom:'tension (hors gamme)', court:'tens', i:[0,1,3,6,7] }
   ];
   var R = { pc:2, g:1, d:1 };            /* ré, mineur, premier degré */
   var prog = [], progActif = false, progPas = 0, notesPas = 0;
@@ -420,6 +426,20 @@
   var MOTIFS_BOUCLE = [[0,2,1,4,2,3,1,5],[0,1,2,4,3,2,5,4],[0,2,0,3,1,4,2,5],
                        [0,4,2,1,5,3,2,4],[0,1,3,2,4,5,3,2],[5,3,4,2,3,1,2,0]];
 
+  /* À quelle gamme de la roue chaque famille appartient-elle ? On le CALCULE au
+     chargement plutôt que de l'écrire à la main : la première gamme de la roue
+     qui contient toutes les hauteurs de la famille. Cinq familles tombent dans
+     un mode ; Tension ne tombait dans aucun, d'où la treizième case. */
+  FAMILLES.forEach(function(f){
+    var pc = [];
+    f.gamme.forEach(function(s){ var x = s % 12; if (pc.indexOf(x) < 0) pc.push(x); });
+    f.hauteurs = pc.sort(function(a, b){ return a - b; });
+    f.gammeRoue = 1;
+    for (var i = 0; i < GAMMES.length; i++){
+      if (pc.every(function(x){ return GAMMES[i].i.indexOf(x) >= 0; })) { f.gammeRoue = i; break; }
+    }
+  });
+
   var PISTES = { melodie:'Mélodie', basse:'Basse', nappes:'Nappes', percu:'Percussions' };
   var courante = BOUCLES[0], favoris = {}, famille = 'Tout', muet = {}, solo = {};
   var S = { master:80, melodie:80, basse:75, nappes:60, percu:85, low:0, mid:0, high:0 };
@@ -485,6 +505,7 @@
     o.connect(f); f.connect(g); g.connect(canaux[canal]);
     o.start(t); o.stop(t + duree + .03);
     o.onended = function(){ o.disconnect(); f.disconnect(); g.disconnect(); };
+    annoncer(((midi % 12) + 12) % 12, t);
   }
   function grosseCaisse(t){
     var o = ctxS.createOscillator(), g = ctxS.createGain();
@@ -504,8 +525,11 @@
   }
   function programmer(t, s){
     var a = courante, temps = 60 / a.bpm, mesure = Math.floor(s / 16), pos = s % 16;
-    var decalage = [0,0,-5,-2][Math.floor(mesure / 2) % 4];
-    var base = racineTransposee(a.racine) + decalage;
+    /* La musique de Vincent module DÉJÀ toute seule, toutes les deux mesures :
+       0, 0, −5, −2 demi-tons. La roue l'ignorait ; elle la suit désormais. */
+    var d = [0,0,-5,-2][Math.floor(mesure / 2) % 4];
+    if (d !== decalage) { decalage = d; marqueur(); }
+    var base = racineTransposee(a.racine) + d;
     var ga = $('imposer').value === '1' ? gammeImposee() : a.gamme;
     var allure = a.fi === 0 ? 4 : a.fi === 3 ? 3 : a.densite === 1 ? 2 : 1;
     if (s % allure === 0){
@@ -531,8 +555,20 @@
       majRoues(); dessinerProg();
     }
   }
+  /* Choisir une boucle ACCORDE la roue sur elle : sa vraie tonique, sa vraie
+     gamme. La roue cesse d'être un réglage qu'on impose pour devenir aussi un
+     affichage de ce qui joue. On ne le fait pas si une progression tourne — elle
+     a la priorité, sinon elle serait écrasée à chaque changement de morceau. */
+  function accorderSur(b){
+    if (progActif) return;
+    R.pc = ((b.racine % 12) + 12) % 12;
+    R.g = FAMILLES[b.fi].gammeRoue;
+    R.d = 1;
+    majRoues();
+  }
   function jouerBoucle(b){
     var ticket = ++jeton;
+    if (b) accorderSur(b);
     try {
       clearInterval(minuteur);
       if (ctxS){ var vieux = ctxS; ctxS = null; vieux.close(); }
@@ -547,6 +583,7 @@
         };
         pompe(); minuteur = setInterval(pompe, 25);
         brancherCadrans(ctxS, compresseur);
+        horloge = ctxS; file = [];
         /* troisième crochet laissé exprès, comme TABLE et __roues */
         window.STUDIO = { ctx:ctxS, sortie:compresseur, boucle:function(){ return courante; } };
         majStudio(); ranger();
@@ -556,6 +593,7 @@
   function arreterBoucle(){
     ++jeton; enLecture = false; clearInterval(minuteur); minuteur = null;
     debrancherCadrans();
+    horloge = null; file = []; decalage = 0; marqueur();
     if (ctxS){ var vieux = ctxS; ctxS = null; vieux.close(); }
     majStudio();
   }
@@ -672,6 +710,7 @@
     var p = st.pas[i % st.pas.length];
     var f = danger ? freqDemiTons(CRISE[i % CRISE.length], 2) : freqDegre(p.d, p.o);
     A._noteMusique(A.ctx.currentTime, f, danger ? .55 : st.duree, danger ? .075 : st.volume, st.forme);
+    annoncer(pcDeFreq(f), A.ctx.currentTime);
     if (i % 8 === 0) A._noteMusique(A.ctx.currentTime, f / 2, 2.7, .035, 'sine');
     if (i % 2 === 0) A._relais(A.ctx.currentTime, danger ? .12 : .09);
     if (progActif && prog.length && ++notesPas >= 8){
@@ -701,11 +740,13 @@
       window.TABLE = A;
       appliquerJeu();
       brancherCadrans(A.ctx, A.master);
+      horloge = A.ctx; file = []; decalage = 0; marqueur();
       return true;
     });
   }
   function arreterJeu(){
     debrancherCadrans();
+    horloge = null; file = [];
     if (A) { try { A.fermer(); } catch (e) {} A = null; window.TABLE = null; }
   }
 
@@ -795,14 +836,62 @@
     s += anneau('degre', 7, 150, 196, 173, 12,
       function(i){ var nm = nomDegre(i); return (i + 1) + (nm ? ' ' + nm : ''); },
       function(i){ return i === R.d - 1; }, function(i){ return i < iv.length; });
-    s += anneau('gamme', 12, 100, 146, 123, 9.5,
+    s += anneau('gamme', GAMMES.length, 100, 146, 123, 9,
       function(i){ return GAMMES[i].court; }, function(i){ return i === R.g; }, null);
     s += anneau('ton', 12, 52, 96, 74, 13,
       function(i){ return NOTES[i]; }, function(i){ return i === R.pc; }, null);
+    /* La couche du Simon : douze secteurs transparents posés PAR-DESSUS l'anneau
+       des tons. Ils s'allument quand la note sonne réellement, pas quand elle est
+       programmée — l'horloge de référence est celle du moteur audio. */
+    var i, a0, a1;
+    for (i = 0; i < 12; i++){
+      a0 = -Math.PI / 2 + i * Math.PI / 6; a1 = a0 + Math.PI / 6;
+      /* une bande à la lisière, et non tout le secteur : à pleine lueur, un
+         remplissage complet effaçait le nom de la note. La lumière doit dire
+         quelle note sonne, pas empêcher de la lire. */
+      s += '<path class="lueur" data-l="' + i + '" d="' + arc(86, 96, a0, a1) +
+           '" fill="#e9e4d6" opacity="0" pointer-events="none"/>';
+    }
+    s += '<path id="marque" d="" fill="none" stroke="#c9a45c" stroke-width="3" pointer-events="none"/>';
     s += '<circle cx="200" cy="200" r="50" fill="#0a0c12" stroke="#232a3d"/>' +
-         '<text x="200" y="193" font-size="17" fill="#c9a45c">' + NOTES[pcTonale()] + '</text>' +
-         '<text x="200" y="212" font-size="9.5" fill="#8a8678">' + gamme().court + '</text>';
+         '<text x="200" y="190" font-size="17" fill="#c9a45c">' + NOTES[pcTonale()] + '</text>' +
+         '<text x="200" y="208" font-size="9" fill="#8a8678">' + gamme().court + '</text>' +
+         '<text id="sonne" x="200" y="222" font-size="8.5" fill="#8fb08a"></text>';
     $('roue').innerHTML = s;
+    secteursLueur = [];
+    for (i = 0; i < 12; i++) secteursLueur[i] = $('roue').querySelector('[data-l="' + i + '"]');
+    marque = $('roue').querySelector('#marque');
+    marqueur();
+  }
+
+  /* ---- LE SIMON : les notes qui sonnent vraiment ----
+     Les deux moteurs programment leurs notes À L'AVANCE (jusqu'à 120 ms pour les
+     boucles). On empile donc (hauteur, instant) et on n'allume qu'au moment où
+     l'horloge audio atteint cet instant : ce qu'on voit est ce qu'on entend, et
+     non ce qui vient d'être décidé. */
+  var lueur = new Float64Array(12), file = [], horloge = null, decalage = 0;
+  var secteursLueur = [], marque = null;
+  function pcDeFreq(f){ return ((Math.round(12 * Math.log(f / 440) / Math.LN2 + 69) % 12) + 12) % 12; }
+  function annoncer(pc, t){ if (file.length < 400) file.push({ pc:pc, t:t }); }
+  function marqueur(){
+    if (!marque) return;
+    var pc = ((pcTonale() + decalage) % 12 + 12) % 12;
+    if (decalage === 0){ marque.setAttribute('d', ''); if ($('sonne')) $('sonne').textContent = ''; return; }
+    var a0 = -Math.PI / 2 + pc * Math.PI / 6, a1 = a0 + Math.PI / 6;
+    marque.setAttribute('d', arc(98, 100, a0, a1));
+    if ($('sonne')) $('sonne').textContent = 'sonne en ' + NOTES[pc];
+  }
+  function lueurs(){
+    if (horloge && secteursLueur.length){
+      var t = horloge.currentTime, maintenant = performance.now(), i;
+      while (file.length && file[0].t <= t){ lueur[file.shift().pc] = maintenant; }
+      for (i = 0; i < 12; i++){
+        var age = maintenant - lueur[i];
+        var v = age < 520 ? Math.max(0, .95 * (1 - age / 520)) : 0;
+        if (secteursLueur[i]) secteursLueur[i].setAttribute('opacity', v.toFixed(3));
+      }
+    }
+    requestAnimationFrame(lueurs);
   }
   function majLecture(){
     var noms = nomsGamme();
@@ -1069,7 +1158,7 @@
   });
   $('v-imposer').textContent = $('imposer').value === '1' ? 'oui' : 'non';
   dessinerRoue(); majLecture(); dessinerProg(); dessinerBoucles(); majStudio(); afficherJeu();
-  spectre();
+  spectre(); lueurs();
 })();
 </script>
 <script defer src="../lecteur.js?v=4"></script>
