@@ -90,6 +90,28 @@
     letter-spacing:.08em; text-transform:uppercase; text-decoration:none; display:inline-block;}
   .actions button:hover, .actions a:hover{background:rgba(201,164,92,.1); text-decoration:none;}
 
+  /* les trois roues */
+  .roues{display:grid; grid-template-columns:minmax(0,1fr) 13rem; gap:1.2rem; align-items:start; margin:1rem 0 0;}
+  .roues svg{width:100%; height:auto; display:block; touch-action:manipulation;}
+  .roues .sect{cursor:pointer; transition:fill .12s;}
+  .roues .sect:hover{fill:rgba(143,176,138,.22);}
+  .roues text{fill:var(--craie-2); font-family:var(--mono); text-anchor:middle;
+    dominant-baseline:middle; pointer-events:none; user-select:none;}
+  .roues text.on{fill:var(--encre); font-weight:500;}
+  .roues text.muet{fill:var(--craie-3); opacity:.4;}
+  .lecture{border:1px solid var(--trait); border-left:2px solid var(--laiton); padding:.9rem 1rem;}
+  .lecture .grand{font-family:var(--serif-d); font-size:1.35rem; color:var(--laiton); line-height:1.2;}
+  .lecture .petit{font-size:.68rem; color:var(--craie-3); line-height:1.7; margin-top:.5rem;}
+  .lecture .notes{font-size:.72rem; color:var(--craie-2); margin-top:.6rem; letter-spacing:.06em; word-spacing:.2em;}
+
+  .prog{margin:1.2rem 0 0;}
+  .prog .pas{display:flex; gap:.4rem; flex-wrap:wrap; margin:.7rem 0;}
+  .prog .pas button{padding:.42rem .6rem; border:1px solid var(--trait); background:transparent;
+    color:var(--craie-2); font-family:var(--mono); font-size:.7rem; cursor:pointer;}
+  .prog .pas button.actif{border-color:var(--laiton); color:var(--laiton); background:rgba(201,164,92,.08);}
+  .prog .pas button:hover{border-color:var(--hote); color:var(--hote);}
+  .prog .vide{font-size:.7rem; color:var(--craie-3); font-style:italic;}
+
   footer{border-top:1px solid var(--trait); padding:1.6rem 0 0; margin-top:2.6rem;
     font-size:.7rem; line-height:1.9; color:var(--craie-3);}
   footer b{color:var(--craie-2); font-weight:500;}
@@ -137,6 +159,41 @@
       <option value="arpege">arpège</option><option value="derive">dérive</option>
       <option value="sequence">séquence</option><option value="abyssal">abyssal</option>
     </select><span class="val"></span></div>
+
+    <h2>Les trois roues</h2>
+    <p class="sous">La roue intérieure donne les douze tons. Celle du milieu, la couleur de la
+    gamme. Celle de l'extérieur, les sept degrés&nbsp;: le degré allumé devient la tonale, et la
+    gamme se rebâtit sur lui. Tout agit sur la suite en train de se jouer, à la note près.</p>
+    <div class="roues">
+      <svg id="roue" viewBox="0 0 400 400" role="group" aria-label="Roues de tonalité"></svg>
+      <div>
+        <div class="lecture">
+          <div class="grand" id="accord">—</div>
+          <div class="notes" id="notes"></div>
+          <div class="petit" id="detail"></div>
+        </div>
+        <div class="prog">
+          <p class="sous" style="margin:.9rem 0 .2rem">Une progression, c'est une suite de
+          positions de roue. La roue est le présent&nbsp;; la bande ci-dessous est ce qui vient
+          après.</p>
+          <div class="actions" style="margin:.6rem 0 0">
+            <button id="capturer" style="padding:.45rem .7rem; font-size:.66rem">Capturer</button>
+            <button id="jouerprog" style="padding:.45rem .7rem; font-size:.66rem">Jouer</button>
+            <button id="viderprog" style="padding:.45rem .7rem; font-size:.66rem">Vider</button>
+          </div>
+          <div class="pas" id="pasprog"><span class="vide">Rien encore. Réglez les roues, puis
+          « Capturer ».</span></div>
+          <p class="note" style="margin:.2rem 0 0">Chaque position tient huit notes. Cliquez sur
+          un pas pour l'enlever.</p>
+        </div>
+      </div>
+    </div>
+    <p class="note">Les motifs du jeu sont désormais écrits en <b>degrés</b> et non en fréquences
+    fixes&nbsp;: c'est ce qui permet aux roues d'agir. Vérifié note à note — sur ré mineur, premier
+    degré, <b>arpège, dérive et séquence rendent exactement les fréquences d'origine</b>. Le motif
+    <b>abyssal</b> fait exception&nbsp;: il n'était pas dans la gamme (il portait un si et un fa
+    dièse), et trois de ses six notes descendent maintenant d'un demi-ton pour rentrer dans le rang.
+    Je préfère l'écrire que le laisser découvrir.</p>
 
     <h2>Ce que j'ai ajouté cette nuit</h2>
     <p class="sous">La coursive est le souffle des ventilations&nbsp;; les relais sont le déclic
@@ -205,7 +262,12 @@
   /* Les réglages restent dans CE navigateur, d'une visite à l'autre. Ils n'en
      sortent jamais tout seuls : rien n'est envoyé nulle part sans un clic. */
   function ranger(){
-    try { localStorage.setItem(CLE, JSON.stringify(lire())); } catch (e) {}
+    try {
+      var v = lire();
+      v.roues = { pc:R.pc, g:R.g, d:R.d };
+      v.progression = prog;
+      localStorage.setItem(CLE, JSON.stringify(v));
+    } catch (e) {}
   }
   function reprendre(){
     try {
@@ -213,6 +275,13 @@
       if (!v) return false;
       champs.forEach(function(n){ if (typeof v[n] === 'number') $(n).value = v[n]; });
       if (v.style) $('style').value = v.style;
+      if (v.roues && GAMMES[v.roues.g]) {
+        R.pc = v.roues.pc | 0; R.g = v.roues.g | 0;
+        R.d = Math.min(v.roues.d | 0 || 1, GAMMES[R.g].i.length);
+      }
+      if (Array.isArray(v.progression)) prog = v.progression.filter(function(p){
+        return p && GAMMES[p.g] && p.pc >= 0 && p.pc < 12;
+      });
       return true;
     } catch (e) { return false; }
   }
@@ -250,6 +319,7 @@
       ' relais=' + v.relais.toFixed(3) + ' relaisHz=' + Math.round(v.relaisHz) +
       ' cadence=' + v.cadence + '\n' +
       'vitesse=' + v.vitesse + ' crise=' + (v.crise ? 'oui' : 'non') + '\n' +
+      texteRoues() + '\n' +
       'mesuré ici : aigus=' + (derniere.c1 === null ? '?' : derniere.c1 + ' %') +
       ' grave=' + (derniere.c2 === null ? '?' : derniere.c2 + ' %') +
       ' modulation=' + (derniere.c3 === null ? '?' : derniere.c3 + ' dB') + '\n' +
@@ -367,6 +437,7 @@
       }
       relaisBrut = A._relais.bind(A);
       A._relais = relaisRegle;
+      A._arpTick = tickRoues;   /* les motifs passent par les roues */
       /* laissé exprès : de quoi sonder la table depuis la console si un réglage
          s'entend autrement qu'il ne se mesure. */
       window.TABLE = A;
@@ -398,8 +469,226 @@
     appliquer();
   });
 
+  /* ============================================================
+     LES TROIS ROUES
+     Le jeu écrivait ses motifs en fréquences fixes, donc en ré mineur pour
+     toujours. Réécrits en DEGRÉS, ils suivent les roues. Contrôle fait note
+     à note : sur ré mineur, premier degré, arpège / dérive / séquence
+     rendent exactement les fréquences d'origine. Abyssal non — il portait un
+     si et un fa dièse, étrangers à ré mineur ; trois de ses six notes
+     descendent d'un demi-ton. C'est dit sur la page.
+     ============================================================ */
+  var NOTES = ['Do','Do♯','Ré','Mi♭','Mi','Fa','Fa♯','Sol','Sol♯','La','Si♭','Si'];
+  var GAMMES = [
+    { nom:'majeur',            court:'maj',   i:[0,2,4,5,7,9,11] },
+    { nom:'mineur',            court:'min',   i:[0,2,3,5,7,8,10] },
+    { nom:'mineur harmonique', court:'m harm',i:[0,2,3,5,7,8,11] },
+    { nom:'mineur mélodique',  court:'m mél', i:[0,2,3,5,7,9,11] },
+    { nom:'dorien',            court:'dor',   i:[0,2,3,5,7,9,10] },
+    { nom:'phrygien',          court:'phr',   i:[0,1,3,5,7,8,10] },
+    { nom:'lydien',            court:'lyd',   i:[0,2,4,6,7,9,11] },
+    { nom:'mixolydien',        court:'mix',   i:[0,2,4,5,7,9,10] },
+    { nom:'locrien',           court:'loc',   i:[0,1,3,5,6,8,10] },
+    { nom:'mineur 7 (accord)', court:'m7',    i:[0,3,7,10] },
+    { nom:'majeur 7 (accord)', court:'M7',    i:[0,4,7,11] },
+    { nom:'diminué (accord)',  court:'dim',   i:[0,3,6,9] }
+  ];
+  /* {d: degré, o: octave} — relevés sur les fréquences d'origine, en ré mineur */
+  var MOTIFS = {
+    derive:   { saut:3, duree:2.5, volume:.04,  forme:'sine',
+      pas:[{d:1,o:2},{d:5,o:2},{d:1,o:3},{d:5,o:2}] },
+    arpege:   { saut:1, duree:.72, volume:.055, forme:'triangle',
+      pas:[{d:1,o:2},{d:5,o:2},{d:1,o:3},{d:3,o:3},{d:5,o:3},{d:1,o:4},{d:5,o:3},{d:1,o:3}] },
+    sequence: { saut:1, duree:.42, volume:.06,  forme:'square',
+      pas:[{d:1,o:2},{d:5,o:2},{d:1,o:3},{d:5,o:3},{d:3,o:3},{d:1,o:4},{d:5,o:3},{d:3,o:4},
+           {d:1,o:4},{d:5,o:3},{d:3,o:3},{d:1,o:3}] },
+    abyssal:  { saut:2, duree:1.8, volume:.055, forme:'sine',
+      pas:[{d:5,o:1},{d:2,o:2},{d:5,o:2},{d:6,o:1},{d:3,o:2},{d:6,o:2}] }
+  };
+  /* la crise garde ses intervalles en demi-tons : elle est faite pour sonner FAUX */
+  var CRISE = [0,6,11,13,18,23,18,11];
+
+  var R = { pc:2, g:1, d:1 };            /* ré, mineur, premier degré */
+  var prog = [], progActif = false, progPas = 0, notesPas = 0;
+
+  function gamme(){ return GAMMES[R.g]; }
+  function pcTonale(){
+    var iv = gamme().i;
+    return (R.pc + iv[Math.min(R.d - 1, iv.length - 1)]) % 12;
+  }
+  function midiFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
+  function freqDegre(deg, oct){
+    var iv = gamme().i, n = iv.length, k = deg - 1;
+    var o = oct + Math.floor(k / n);
+    return midiFreq(12 * (o + 1) + pcTonale() + iv[((k % n) + n) % n]);
+  }
+  function freqDemiTons(s, oct){ return midiFreq(12 * ((oct || 2) + 1) + pcTonale() + s); }
+  /* ORTHOGRAPHE. Une gamme de sept notes se lit sur SEPT LETTRES DIFFÉRENTES : si
+     majeur s'écrit si do♯ ré♯ mi fa♯ sol♯ la♯, jamais « mi♭ » à la place de ré♯.
+     On essaie donc les sept lettres possibles pour la tonique et on garde
+     l'orthographe qui demande le moins d'altérations. Pour un accord (moins de
+     sept notes) les lettres ne se suivent pas : on retombe sur les noms chromatiques. */
+  var LETTRES = ['Do','Ré','Mi','Fa','Sol','La','Si'], NATS = [0,2,4,5,7,9,11];
+  function alteration(n){ return n === 0 ? '' : (n === 1 ? '♯' : n === -1 ? '♭' : n === 2 ? '𝄪' : '𝄫'); }
+  function ecart(cible, naturel){ var a = ((cible - naturel) % 12 + 12) % 12; return a > 6 ? a - 12 : a; }
+  function epeler(pc, iv){
+    var brut = iv.map(function(s){ return NOTES[(pc + s) % 12]; });
+    if (iv.length !== 7) return brut;
+    var mieux = null, L, k, li, a, noms, somme, ok;
+    for (L = 0; L < 7; L++){
+      if (Math.abs(ecart(pc, NATS[L])) > 2) continue;
+      noms = []; somme = 0; ok = true;
+      for (k = 0; k < 7; k++){
+        li = (L + k) % 7;
+        a = ecart((pc + iv[k]) % 12, NATS[li]);
+        if (Math.abs(a) > 2) { ok = false; break; }
+        somme += Math.abs(a); noms.push(LETTRES[li] + alteration(a));
+      }
+      if (ok && (mieux === null || somme < mieux.s)) mieux = { s:somme, n:noms };
+    }
+    return mieux ? mieux.n : brut;
+  }
+  function nomsGamme(){ return epeler(pcTonale(), gamme().i); }
+  function nomDegre(k){
+    var iv = gamme().i;
+    if (k >= iv.length) return null;
+    return nomsGamme()[k];
+  }
+
+  /* ---- le dessin ---- */
+  function arc(r1, r2, a0, a1){
+    var p = function(r, a){ return [200 + r * Math.cos(a), 200 + r * Math.sin(a)]; };
+    var A1 = p(r2, a0), B1 = p(r2, a1), C1 = p(r1, a1), D1 = p(r1, a0);
+    var g = (a1 - a0) > Math.PI ? 1 : 0;
+    return 'M' + A1 + 'A' + r2 + ' ' + r2 + ' 0 ' + g + ' 1 ' + B1 +
+           'L' + C1 + 'A' + r1 + ' ' + r1 + ' 0 ' + g + ' 0 ' + D1 + 'Z';
+  }
+  function anneau(cible, n, r1, r2, rt, taille, etiquette, choisi, actif){
+    var out = '', i, a0, a1, am, on, mort;
+    for (i = 0; i < n; i++){
+      a0 = -Math.PI / 2 + i * 2 * Math.PI / n;
+      a1 = a0 + 2 * Math.PI / n;
+      am = (a0 + a1) / 2;
+      on = choisi(i); mort = actif ? !actif(i) : false;
+      out += '<path class="sect" data-roue="' + cible + '" data-i="' + i + '" d="' + arc(r1, r2, a0, a1) +
+        '" fill="' + (on ? (cible === 'ton' ? '#c9a45c' : cible === 'gamme' ? '#8fb08a' : '#e9e4d6')
+                         : (mort ? 'rgba(35,42,61,.25)' : 'rgba(35,42,61,.55)')) +
+        '" stroke="#0a0c12" stroke-width="1.5"' + (mort ? ' pointer-events="none"' : '') + '/>' +
+        '<text x="' + (200 + rt * Math.cos(am)).toFixed(1) + '" y="' + (200 + rt * Math.sin(am)).toFixed(1) +
+        '" font-size="' + taille + '" class="' + (on ? 'on' : (mort ? 'muet' : '')) + '">' +
+        etiquette(i) + '</text>';
+    }
+    return out;
+  }
+  function dessinerRoue(){
+    var iv = gamme().i;
+    var s = '';
+    s += anneau('degre', 7, 150, 196, 173, 12,
+      function(i){ var nm = nomDegre(i); return (i + 1) + (nm ? ' ' + nm : ''); },
+      function(i){ return i === R.d - 1; },
+      function(i){ return i < iv.length; });
+    s += anneau('gamme', 12, 100, 146, 123, 9.5,
+      function(i){ return GAMMES[i].court; },
+      function(i){ return i === R.g; }, null);
+    s += anneau('ton', 12, 52, 96, 74, 13,
+      function(i){ return NOTES[i]; },
+      function(i){ return i === R.pc; }, null);
+    s += '<circle cx="200" cy="200" r="50" fill="#0a0c12" stroke="#232a3d"/>' +
+         '<text x="200" y="193" font-size="17" fill="#c9a45c">' + NOTES[pcTonale()] + '</text>' +
+         '<text x="200" y="212" font-size="9.5" class="muet" style="opacity:1">' + gamme().court + '</text>';
+    $('roue').innerHTML = s;
+  }
+  function majLecture(){
+    var noms = nomsGamme();
+    $('accord').textContent = noms[0] + ' ' + gamme().nom;
+    $('notes').textContent = noms.join(' · ');
+    $('detail').textContent = (R.d === 1)
+      ? ('base ' + NOTES[R.pc] + ' ' + gamme().nom + ', premier degré')
+      : ('base ' + NOTES[R.pc] + ' ' + gamme().nom + ' — pivot sur le degré ' + R.d +
+         ', donc la tonale est ' + NOTES[pcTonale()] + '. Revenez au 1 pour retrouver la base.');
+  }
+  function majRoues(){ dessinerRoue(); majLecture(); bloc(lire()); ranger(); }
+
+  $('roue').addEventListener('click', function(e){
+    var t = e.target.closest('[data-roue]');
+    if (!t) return;
+    var i = parseInt(t.getAttribute('data-i'), 10);
+    var quoi = t.getAttribute('data-roue');
+    if (quoi === 'ton') { R.pc = i; R.d = 1; }
+    else if (quoi === 'gamme') { R.g = i; if (R.d > GAMMES[i].i.length) R.d = 1; }
+    else R.d = i + 1;
+    majRoues();
+  });
+
+  /* ---- la suite qui joue : on remplace le tic du jeu, on garde son enveloppe ---- */
+  function tickRoues(force){
+    if (!A || !A.ctx || A.ctx.state !== 'running' || A.reglages.muet || A.reglages.musique <= .01) return;
+    var v = lire();
+    var st = MOTIFS[v.style] || MOTIFS.arpege;
+    if (!force && (A.arpPas % st.saut)) { A.arpPas++; return; }
+    var danger = v.crise ? true : (A.partie.cote < 35);
+    var i = A.arpPas++;
+    var f = danger ? freqDemiTons(CRISE[i % CRISE.length], 2)
+                   : (function(p){ return freqDegre(p.d, p.o); })(st.pas[i % st.pas.length]);
+    A._noteMusique(A.ctx.currentTime, f, danger ? .55 : st.duree, danger ? .075 : st.volume, st.forme);
+    if (i % 8 === 0) A._noteMusique(A.ctx.currentTime, f / 2, 2.7, .035, 'sine');
+    if (i % 2 === 0) A._relais(A.ctx.currentTime, danger ? .12 : .09);
+    if (progActif && prog.length && ++notesPas >= 8) {
+      notesPas = 0; progPas = (progPas + 1) % prog.length;
+      R.pc = prog[progPas].pc; R.g = prog[progPas].g; R.d = prog[progPas].d;
+      majRoues(); dessinerProg();
+    }
+  }
+
+  /* ---- la progression ---- */
+  function nomPas(p){
+    var iv = GAMMES[p.g].i;
+    return NOTES[(p.pc + iv[Math.min(p.d - 1, iv.length - 1)]) % 12] + ' ' + GAMMES[p.g].court;
+  }
+  function dessinerProg(){
+    var z = $('pasprog');
+    if (!prog.length) { z.innerHTML = '<span class="vide">Rien encore. Réglez les roues, puis « Capturer ».</span>'; return; }
+    z.innerHTML = prog.map(function(p, i){
+      return '<button data-p="' + i + '" class="' + (progActif && i === progPas ? 'actif' : '') + '">' +
+        (i + 1) + '. ' + nomPas(p) + '</button>';
+    }).join('');
+  }
+  $('pasprog').addEventListener('click', function(e){
+    var t = e.target.closest('[data-p]'); if (!t) return;
+    prog.splice(parseInt(t.getAttribute('data-p'), 10), 1);
+    if (progPas >= prog.length) progPas = 0;
+    dessinerProg(); bloc(lire()); ranger();
+  });
+  $('capturer').addEventListener('click', function(){
+    prog.push({ pc:R.pc, g:R.g, d:R.d }); dessinerProg(); bloc(lire()); ranger();
+  });
+  $('jouerprog').addEventListener('click', function(){
+    if (!prog.length) return;
+    progActif = !progActif; progPas = 0; notesPas = 0;
+    $('jouerprog').textContent = progActif ? 'Arrêter' : 'Jouer';
+    if (progActif) { R.pc = prog[0].pc; R.g = prog[0].g; R.d = prog[0].d; majRoues(); }
+    dessinerProg();
+  });
+  $('viderprog').addEventListener('click', function(){
+    prog = []; progActif = false; progPas = 0; $('jouerprog').textContent = 'Jouer';
+    dessinerProg(); bloc(lire()); ranger();
+  });
+
+  function texteRoues(){
+    var t = 'ton=' + NOTES[R.pc] + ' gamme=' + gamme().nom + ' degré=' + R.d +
+            ' → tonale=' + NOTES[pcTonale()];
+    if (prog.length) t += '\nprogression=' + prog.map(nomPas).join(' → ');
+    return t;
+  }
+  /* laissé exprès, comme window.TABLE : de quoi rejouer le calcul depuis la console
+     et vérifier qu'un motif rend bien ce qu'il doit rendre. */
+  window.__roues = { R:R, prog:function(){ return prog; }, texte:texteRoues,
+                     freq:freqDegre, motifs:MOTIFS, gammes:GAMMES, notes:NOTES,
+                     dessiner:majRoues };
+
   if (reprendre()) $('etat').textContent =
     'Vos réglages de la dernière fois sont revenus. Le navigateur exige un clic avant de produire du son.';
+  dessinerRoue(); majLecture(); dessinerProg();
   afficher();
 })();
 </script>
